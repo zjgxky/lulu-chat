@@ -1,0 +1,425 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Dify Chatbot{% endblock %}</title>
+    <style>
+        body {
+            display: flex;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7f9fb;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #fff;
+            height: 100vh;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+            border-right: 1px solid #e1e8ed;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 24px 20px 20px 20px;
+            border-bottom: 1px solid #e1e8ed;
+            background: #f8fafc;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0 0 8px 0;
+        }
+        
+        .sidebar-subtitle {
+            font-size: 0.9rem;
+            color: #718096;
+            margin: 0;
+        }
+        
+        .sidebar-nav {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        .nav-section {
+            margin-bottom: 24px;
+        }
+        
+        .nav-section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .nav-item {
+            display: block;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            text-decoration: none;
+            color: #4a5568;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+        
+        .nav-item.active {
+            background: #ebf8ff;
+            color: #3182ce;
+            border-left: 3px solid #3182ce;
+        }
+        
+        .nav-item.faq {
+            background: #f0fff4;
+            color: #38a169;
+        }
+        
+        .nav-item.faq:hover {
+            background: #e6fffa;
+        }
+        
+        .nav-item.dashboard {
+            background: #fffaf0;
+            color: #d69e2e;
+        }
+        
+        .nav-item.dashboard:hover {
+            background: #fff5f0;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 20px 0;
+        }
+        
+
+        
+        .session-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .session-date {
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+        
+        .new-session-btn {
+            display: block;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .new-session-btn:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        
+        .session-item-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .session-item {
+            flex: 1;
+            display: block;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #4a5568;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+        }
+        
+        .session-item:hover {
+            background: #f7fafc;
+            color: #2d3748;
+            border-color: #e2e8f0;
+        }
+        
+        .session-item.active {
+            background: #ebf8ff;
+            color: #3182ce;
+            border-color: #3182ce;
+        }
+        
+        .delete-session-btn {
+            display: none;
+            padding: 6px 8px;
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .delete-session-btn:hover {
+            background: #feb2b2;
+        }
+        
+        .session-item-container:hover .delete-session-btn {
+            display: block;
+        }
+        
+        .main-content {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-content.hide-header {
+            padding-top: 0;
+        }
+        
+        .content-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 24px 0;
+            padding: 24px 24px 0 24px;
+            flex-shrink: 0;
+        }
+        
+        /* Hide header for chat pages */
+        .hide-header .content-header {
+            display: none;
+        }
+        
+        /* Hide content title for chat sessions */
+        .hide-header .content-title {
+            display: none;
+        }
+        
+        .content-body {
+            flex: 1;
+            padding: 0 24px 24px 24px;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-logout-btn {
+            display: inline-block;
+            padding: 12px 16px;
+            margin: 0 10px 0 0;
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .sidebar-logout-btn:hover {
+            background: #feb2b2;
+        }
+        
+        .sidebar-settings-btn {
+            display: inline-block;
+            padding: 12px 16px;
+            margin: 0 0 0 10px;
+            background: #e6fffa;
+            color: #38a169;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .sidebar-settings-btn:hover {
+            background: #b2f5ea;
+        }
+        
+        .sidebar-bottom-buttons {
+            padding: 20px;
+            display: flex;
+            gap: 0;
+            flex-shrink: 0;
+            border-top: 1px solid #e1e8ed;
+            background: #f8fafc;
+        }
+        
+        .logout-btn:hover {
+            background: #feb2b2;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-state-text {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        
+        .empty-state-subtext {
+            font-size: 0.9rem;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header" id="sidebar-header">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <img src="{% static 'Lululemon-Emblem-700x394.png' %}" alt="Lululemon Logo" style="width: 30px; height: 30px; margin-right: 16px; object-fit: cover; object-position: center;">
+                <div class="sidebar-title" style="font-size: 1.4rem; line-height: 40px;">Lulu Chat</div>
+            </div>
+        </div>
+        
+        <div class="sidebar-nav">
+            <!-- Main Navigation -->
+            <div class="nav-section">
+                <div class="nav-section-title">Main</div>
+                <a href="{% url 'dashboard' %}" class="nav-item dashboard {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    📊 Dashboard
+                </a>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <!-- Chat Sessions -->
+            <div class="nav-section">
+                <div class="nav-section-title">Chat Sessions</div>
+                <a href="{% url 'new_session' %}" class="new-session-btn">+ New Chat</a>
+                
+                {% for session in sessions %}
+                    <div class="session-item-container">
+                        <a href="{% url 'chat_session' session.id %}" 
+                           class="session-item {% if current_session and current_session.id == session.id %}active{% endif %}">
+                            <div class="session-title">
+                                {% if session.title %}
+                                    {% if session.title|length > 25 %}
+                                        {{ session.title|slice:":25" }}...
+                                    {% else %}
+                                        {{ session.title }}
+                                    {% endif %}
+                                {% else %}
+                                    Session #{{ session.id }}
+                                {% endif %}
+                            </div>
+                            <div class="session-date">{{ session.created_at|date:"M d, H:i" }}</div>
+                        </a>
+                        <a href="{% url 'delete_session' session.id %}" 
+                           class="delete-session-btn" 
+                           onclick="return confirm('Are you sure you want to delete this session?')"
+                           title="Delete session">
+                            🗑️
+                        </a>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <div class="empty-state-text">No chat sessions</div>
+                        <div class="empty-state-subtext">Start a new conversation</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Logout button at bottom of sidebar -->
+        <div class="sidebar-bottom-buttons">
+            <a href="{% url 'logout' %}" class="sidebar-logout-btn">Logout</a>
+            <a href="{% url 'settings' %}" class="sidebar-settings-btn">Settings</a>
+        </div>
+    </div>
+    
+    <div class="main-content {% if request.resolver_match.url_name == 'chat_session' or request.resolver_match.url_name == 'dashboard' %}hide-header{% endif %}">
+        <h1 class="content-title">{% block page_title %}Dashboard{% endblock %}</h1>
+        
+        <div class="content-body">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+
+<script>
+// Handle dynamic sidebar header based on branding setting
+document.addEventListener('DOMContentLoaded', function() {
+    const brandingSetting = localStorage.getItem('lulu-branding');
+    const sidebarHeader = document.getElementById('sidebar-header');
+    
+    if (sidebarHeader) {
+        if (brandingSetting === 'false') {
+            // Show simple "Chatbot" text
+            sidebarHeader.innerHTML = `
+                <div class="sidebar-title" style="font-size: 1.4rem; font-weight: 600; color: #1a202c; margin: 0;">Chatbot</div>
+            `;
+        } else {
+            // Show Lulu branding (default)
+            sidebarHeader.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <img src="{% static 'Lululemon-Emblem-700x394.png' %}" alt="Lululemon Logo" style="width: 30px; height: 30px; margin-right: 16px; object-fit: cover; object-position: center;">
+                    <div class="sidebar-title" style="font-size: 1.4rem; line-height: 40px;">Lulu Chat</div>
+                </div>
+            `;
+        }
+    }
+});
+</script>
+</html>

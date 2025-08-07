@@ -1,0 +1,1200 @@
+{% extends "chatbot_app/base.html" %}
+
+{% block title %}Chat Session #{{ current_session.id }} - Lulu Chat{% endblock %}
+
+{% block page_title %}{% endblock %}
+
+{% block content %}
+<style>
+    /* Override content-body padding for chat page */
+    .content-body {
+        padding: 0 !important;
+    }
+    
+    .chat-container {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        margin: 0;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        background: #f8fafc;
+    }
+    
+    .message {
+        margin-bottom: 16px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        max-width: 80%;
+        word-break: break-word;
+        position: relative;
+    }
+    
+    .message-user {
+        background: #ebf8ff;
+        color: #2c5282;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message-bot {
+        background: #f0fff4;
+        color: #22543d;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+    
+    .user {
+        font-weight: 600;
+        color: #3182ce;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+    
+    .bot {
+        font-weight: 600;
+        color: #38a169;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+    
+    .message-content {
+        line-height: 1.5;
+        font-size: 0.95rem;
+    }
+    
+    .chat-input-container {
+        padding: 20px 24px;
+        background: #fff;
+        border-top: 1px solid #e2e8f0;
+        border-radius: 0 0 12px 12px;
+        margin-top: auto;
+    }
+    
+    .chat-form {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    
+    .chat-input {
+        flex: 1;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s ease;
+        outline: none;
+    }
+    
+    .chat-input:focus {
+        border-color: #3182ce;
+    }
+    
+    .send-btn {
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .send-btn:hover {
+        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        transform: translateY(-1px);
+    }
+    
+    .empty-msg {
+        text-align: center;
+        color: #a0aec0;
+        padding: 40px 20px;
+        font-style: italic;
+    }
+    
+    .cursor {
+        animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+    }
+    
+    .message-container {
+        margin-bottom: 16px;
+    }
+    
+    .feedback-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        justify-content: flex-start;
+        padding: 0 16px;
+    }
+    
+    .feedback-btn {
+        background: none;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        opacity: 0.7;
+        position: relative;
+    }
+    
+    .feedback-btn:hover {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    
+    .like-btn:hover {
+        background: #f0fff4;
+        border-color: #38a169;
+        color: #38a169;
+    }
+    
+    .dislike-btn:hover {
+        background: #fff5f5;
+        border-color: #e53e3e;
+        color: #e53e3e;
+    }
+    
+    .feedback-btn.active {
+        opacity: 1;
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .faq-btn {
+        background: #38a169;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        margin-left: 8px;
+    }
+    
+    .faq-btn:hover {
+        background: #2f855a;
+        transform: translateY(-1px);
+    }
+    
+    .faq-btn:active {
+        transform: translateY(0);
+    }
+    
+    .like-btn.active {
+        background: #f0fff4;
+        border-color: #38a169;
+        color: #38a169;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(56, 161, 105, 0.2);
+    }
+    
+    .dislike-btn.active {
+        background: #fff5f5;
+        border-color: #e53e3e;
+        color: #e53e3e;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(229, 62, 62, 0.2);
+    }
+    
+    /* Markdown styles */
+    .message-content h1, .message-content h2, .message-content h3, 
+    .message-content h4, .message-content h5, .message-content h6 {
+        margin: 16px 0 8px 0;
+        color: #2d3748;
+        font-weight: 600;
+    }
+    
+    .message-content h1 { font-size: 1.4rem; }
+    .message-content h2 { font-size: 1.2rem; }
+    .message-content h3 { font-size: 1.1rem; }
+    
+    .message-content p {
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+    
+    .message-content ul, .message-content ol {
+        margin: 8px 0;
+        padding-left: 20px;
+    }
+    
+    .message-content li {
+        margin: 4px 0;
+        line-height: 1.5;
+    }
+    
+    .message-content blockquote {
+        border-left: 4px solid #3182ce;
+        margin: 12px 0;
+        padding: 8px 12px;
+        background: #f8fafc;
+        border-radius: 0 4px 4px 0;
+        color: #4a5568;
+    }
+    
+    .message-content code {
+        background: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9em;
+    }
+    
+    .message-content pre {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 12px;
+        overflow-x: auto;
+        margin: 12px 0;
+    }
+    
+    .message-content pre code {
+        background: none;
+        padding: 0;
+    }
+    
+    .message-content table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 12px 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .message-content table th {
+        background: #f8fafc;
+        padding: 8px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #2d3748;
+        border-bottom: 2px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+    }
+    
+    .message-content table th:last-child {
+        border-right: none;
+    }
+    
+    .message-content table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        color: #4a5568;
+    }
+    
+    .message-content table td:last-child {
+        border-right: none;
+    }
+    
+    .message-content table tr:hover {
+        background: #f7fafc;
+    }
+    
+    .message-content hr {
+        border: none;
+        border-top: 1px solid #e2e8f0;
+        margin: 16px 0;
+    }
+    
+    .message-content strong {
+        font-weight: 600;
+    }
+    
+    .message-content em {
+        font-style: italic;
+    }
+    
+    .markdown-content {
+        line-height: 1.6;
+    }
+    
+    .markdown-content > *:first-child {
+        margin-top: 0;
+    }
+    
+    .markdown-content > *:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Expandable code blocks */
+    .code-block {
+        margin: 12px 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f8fafc;
+    }
+    
+    .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .code-language {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+    }
+    
+    .code-toggle {
+        background: #3182ce;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .code-toggle:hover {
+        background: #2c5aa0;
+    }
+    
+    .code-content {
+        display: none;
+        background: #f7fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .code-content.expanded {
+        display: block;
+    }
+    
+    .code-preview {
+        background: #f7fafc;
+        padding: 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .code-preview pre {
+        margin: 0;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+    
+    .code-content pre {
+        margin: 0;
+        background: none;
+        border: none;
+        padding: 12px;
+    }
+    
+    /* LaTeX formula styles */
+    .message-content .katex {
+        font-size: 1.1em;
+        margin: 12px 0;
+    }
+    
+    .message-content .katex-display {
+        margin: 16px 0;
+        text-align: center;
+    }
+    
+    /* Python execution styles */
+    .python-execution {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .execute-python-btn {
+        background: #3182ce;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .execute-python-btn:hover:not(:disabled) {
+        background: #2c5aa0;
+    }
+    
+    .execute-python-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .execution-result {
+        margin-top: 12px;
+    }
+    
+    .plot-container {
+        margin-bottom: 12px;
+    }
+    
+    .plot-display {
+        text-align: center;
+    }
+    
+    .download-plot-btn {
+        background: #38a169;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .download-plot-btn:hover {
+        background: #2f855a;
+    }
+    
+    .execution-output {
+        margin-top: 12px;
+    }
+    
+    .stdout {
+        background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+    }
+    
+    .stderr {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+    }
+    
+    .error {
+        color: #e53e3e;
+        font-weight: 500;
+    }
+    
+    .loading {
+        color: #718096;
+        font-style: italic;
+    }
+    
+    /* Automatic plot display styles */
+    .auto-plot-display {
+        margin-top: 16px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .plot-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 12px;
+        font-size: 1rem;
+    }
+    
+    .plot-error {
+        margin-top: 16px;
+        padding: 12px;
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="chat-container">
+    <div class="chat-messages" id="chat-messages">
+        {% if chat_history %}
+            {% for message in chat_history %}
+                <div class="message-container">
+                    <div class="message message-{{ message.sender }}">
+                        <div class="{{ message.sender }}">{{ message.sender|title }}:</div>
+                        <div class="message-content">
+                            {% if message.sender == 'bot' %}
+                                <div class="markdown-content" data-text="{{ message.text|escapejs }}" data-message-id="{{ message.id }}">{{ message.text|linebreaks }}</div>
+                            {% else %}
+                                {{ message.text|linebreaks }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if message.sender == 'bot' %}
+                        <div class="feedback-buttons" data-message-id="{{ message.id }}">
+                            <button class="feedback-btn like-btn" onclick="submitFeedback('like', {{ current_session.id }}, {{ message.id }}, event)" title="Like this response (click again to remove)">
+                                👍
+                            </button>
+                            <button class="feedback-btn dislike-btn" onclick="submitFeedback('dislike', {{ current_session.id }}, {{ message.id }}, event)" title="Dislike this response (click again to remove)">
+                                👎
+                            </button>
+                            <button class="faq-btn" onclick="addToFAQ({{ current_session.id }}, {{ message.id }}, event)" title="Add this conversation to FAQ" data-session-id="{{ current_session.id }}">
+                                Add to FAQ
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-msg">No messages yet. Start the conversation!</div>
+        {% endif %}
+    </div>
+    
+    <div class="chat-input-container">
+        <form class="chat-form" id="chat-form">
+            <input type="text" 
+                   class="chat-input" 
+                   id="user-input" 
+                   placeholder="Type your message..." 
+                   autocomplete="off" />
+            <button type="submit" class="send-btn">Send</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script>
+// Configure marked.js for markdown rendering
+marked.setOptions({
+    breaks: true,
+    gfm: true, // GitHub Flavored Markdown
+    tables: true,
+    sanitize: false,
+    headerIds: false,
+    mangle: false
+});
+
+
+
+const chatForm = document.getElementById('chat-form');
+const chatMessages = document.getElementById('chat-messages');
+const userInput = document.getElementById('user-input');
+const sessionId = "{{ current_session.id }}";
+
+// Auto-scroll to bottom
+function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Initial scroll
+scrollToBottom();
+
+// Chat form submit logic
+chatForm.onsubmit = async function(e) {
+    e.preventDefault();
+    const message = userInput.value.trim();
+    if (!message) return;
+    
+    // Show user message immediately
+    chatMessages.innerHTML += `
+        <div class="message message-user">
+            <div class="user">User:</div>
+            <div class="message-content">${message}</div>
+        </div>
+    `;
+    userInput.value = '';
+    scrollToBottom();
+    
+    // Show streaming message from bot
+    const streamingId = `streaming-${Date.now()}`;
+    chatMessages.innerHTML += `
+        <div class="message message-bot" id="${streamingId}">
+            <div class="bot">Bot:</div>
+            <div class="message-content">
+                <div class="streaming-content"></div>
+            </div>
+        </div>
+    `;
+    scrollToBottom();
+    
+    // Start streaming
+    try {
+        const response = await fetch("{% url 'dify_streaming_proxy' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message, session_id: sessionId})
+        });
+        
+        const streamingElem = document.getElementById(streamingId);
+        if (!streamingElem) return;
+        
+        const streamingContent = streamingElem.querySelector('.streaming-content');
+        let fullReply = "";
+        
+        // Handle streaming response
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        
+                        if (data.type === 'chunk') {
+                            // Stream the chunk to the UI
+                            streamingContent.innerHTML += data.content;
+                            fullReply += data.content;
+                            scrollToBottom();
+                        } else if (data.type === 'streaming_complete') {
+                            // Streaming is complete, now process the full response
+                            fullReply = data.full_reply;
+                            
+                            // Process the complete response with plots and formatting
+                            const processResponse = await fetch("{% url 'process_streamed_response' %}", {
+                                method: "POST",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({
+                                    full_reply: fullReply,
+                                    session_id: sessionId
+                                })
+                            });
+                            
+                            const processData = await processResponse.json();
+                            const enhancedReply = processData.reply;
+                            
+                            // Process markdown and display the enhanced response
+                            let processedReply = enhancedReply;
+                            
+                            // First, handle code blocks that contain markdown tables
+                            processedReply = processedReply.replace(/```md\s*\n([\s\S]*?)\n```/g, (match, content) => {
+                                return marked.parse(content);
+                            });
+                            
+                            // Handle LaTeX math formulas wrapped in $$
+                            processedReply = processedReply.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                                try {
+                                    return katex.renderToString(content, { displayMode: true });
+                                } catch (error) {
+                                    console.log('KaTeX error:', error);
+                                    return `<pre><code class="language-latex">${content}</code></pre>`;
+                                }
+                            });
+                            
+                            // Parse the markdown first
+                            let parsedReply = marked.parse(processedReply);
+                            
+                            // Then, replace the generated <pre><code> blocks with expandable ones
+                            parsedReply = parsedReply.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
+                                const lang = language || 'text';
+                                const lines = content.split('\n');
+                                const preview = lines.slice(0, 1).join('\n');
+                                const hasMore = lines.length > 1;
+                                
+                                let codeBlockHtml = `
+                                    <div class="code-block">
+                                        <div class="code-header">
+                                            <span class="code-language">${lang}</span>
+                                            <button class="code-toggle" onclick="toggleCodeBlock(this)">
+                                                ${hasMore ? 'Show more' : 'Show code'}
+                                            </button>
+                                        </div>
+                                        <div class="code-content collapsed">
+                                            <pre><code class="language-${lang}">${content}</code></pre>
+                                        </div>
+                                        <div class="code-preview">
+                                            <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                return codeBlockHtml;
+                            });
+                            
+                            // Replace the streaming content with the processed content
+                            streamingElem.innerHTML = `
+                                <div class="bot">Bot:</div>
+                                <div class="message-content">
+                                    <div class="markdown-content">${parsedReply}</div>
+                                </div>
+                            `;
+                            
+                            // Add feedback buttons outside the message bubble
+                            const feedbackContainer = document.createElement('div');
+                            feedbackContainer.className = 'feedback-buttons';
+                            feedbackContainer.setAttribute('data-message-id', 'new');
+                            feedbackContainer.innerHTML = `
+                                <button class="feedback-btn like-btn" onclick="submitFeedback('like', ${sessionId}, 'new', event)" title="Like this response (click again to remove)">
+                                    👍
+                                </button>
+                                <button class="feedback-btn dislike-btn" onclick="submitFeedback('dislike', ${sessionId}, 'new', event)" title="Dislike this response (click again to remove)">
+                                    👎
+                                </button>
+                                <button class="faq-btn" onclick="addToFAQ(${sessionId}, 'new', event)" title="Add this conversation to FAQ" data-session-id="${sessionId}">
+                                    Add to FAQ
+                                </button>
+                            `;
+                            
+                            // Insert feedback buttons after the message
+                            streamingElem.parentNode.insertBefore(feedbackContainer, streamingElem.nextSibling);
+                            
+                            // Load feedback state for the new message after a longer delay to ensure DB save
+                            setTimeout(() => {
+                                loadExistingFeedback();
+                            }, 500);
+                            
+                            scrollToBottom();
+                            
+                        } else if (data.type === 'error') {
+                            streamingElem.innerHTML = `
+                                <div class="bot">Bot:</div>
+                                <div class="message-content">Error: ${data.error}</div>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing streaming data:', error);
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        const streamingElem = document.getElementById(streamingId);
+        if (streamingElem) {
+            streamingElem.innerHTML = `
+                <div class="bot">Bot:</div>
+                <div class="message-content">Sorry, there was an error processing your message.</div>
+            `;
+        }
+    }
+};
+
+// Focus on input when page loads
+userInput.focus();
+
+// Load existing feedback state for messages
+async function loadExistingFeedback() {
+    try {
+        const response = await fetch(`{% url 'get_feedback_state' current_session.id %}`);
+        const data = await response.json();
+        
+        if (data.feedback_state && Object.keys(data.feedback_state).length > 0) {
+            // Get all feedback containers
+            const allFeedbackContainers = document.querySelectorAll('.feedback-buttons');
+            
+            // Get all bot messages
+            const botMessages = document.querySelectorAll('.message-bot');
+            
+            // Match feedback containers with messages by position
+            botMessages.forEach((message, index) => {
+                const markdownContent = message.querySelector('.markdown-content');
+                const messageId = markdownContent ? markdownContent.getAttribute('data-message-id') : null;
+                
+                if (messageId && data.feedback_state[messageId]) {
+                    const feedbackType = data.feedback_state[messageId];
+                    const feedbackContainer = allFeedbackContainers[index];
+                    
+                    if (feedbackContainer) {
+                        const likeBtn = feedbackContainer.querySelector('.like-btn');
+                        const dislikeBtn = feedbackContainer.querySelector('.dislike-btn');
+                        
+                        if (likeBtn && dislikeBtn) {
+                            // Remove all active states first
+                            likeBtn.classList.remove('active');
+                            dislikeBtn.classList.remove('active');
+                            
+                            // Apply the correct active state
+                            if (feedbackType === 'like') {
+                                likeBtn.classList.add('active');
+                            } else if (feedbackType === 'dislike') {
+                                dislikeBtn.classList.add('active');
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading feedback state:', error);
+    }
+}
+
+// Process existing messages with markdown
+function processExistingMessages() {
+    const markdownContents = document.querySelectorAll('.markdown-content[data-text]');
+    markdownContents.forEach(content => {
+        const text = content.getAttribute('data-text');
+        if (text) {
+            // Decode Unicode escape sequences
+            let decodedText = text.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+            
+            // Use the decoded text directly (plots are now embedded in the message)
+            let messageText = decodedText;
+            
+            // First, handle code blocks that contain markdown tables
+            messageText = messageText.replace(/```md\s*\n([\s\S]*?)\n```/g, (match, content) => {
+                // Parse the content inside the code block as markdown
+                return marked.parse(content);
+            });
+            
+            // Handle LaTeX math formulas wrapped in $$
+            messageText = messageText.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                try {
+                    return katex.renderToString(content, { displayMode: true });
+                } catch (error) {
+                    console.log('KaTeX error:', error);
+                    return `<pre><code class="language-latex">${content}</code></pre>`;
+                }
+            });
+            
+            // Parse the markdown first
+            let parsedText = marked.parse(messageText);
+            
+            // Then, replace the generated <pre><code> blocks with expandable ones
+            parsedText = parsedText.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
+                const lang = language || 'text';
+                const lines = content.split('\n');
+                const preview = lines.slice(0, 1).join('\n');
+                const hasMore = lines.length > 1;
+                
+                let codeBlockHtml = `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-language">${lang}</span>
+                            <button class="code-toggle" onclick="toggleCodeBlock(this)">
+                                ${hasMore ? 'Show more' : 'Show code'}
+                            </button>
+                        </div>
+                        <div class="code-content collapsed">
+                            <pre><code class="language-${lang}">${content}</code></pre>
+                        </div>
+                        <div class="code-preview">
+                            <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
+                        </div>
+                    </div>
+                `;
+                
+                return codeBlockHtml;
+            });
+            
+
+            
+            console.log('Decoded text:', decodedText);
+            console.log('Parsed text:', parsedText);
+            content.innerHTML = parsedText;
+            
+            // Render KaTeX in existing messages
+            setTimeout(() => {
+                renderMath();
+            }, 100);
+        }
+    });
+}
+
+// Toggle code block visibility
+function toggleCodeBlock(button) {
+    const codeBlock = button.closest('.code-block');
+    const content = codeBlock.querySelector('.code-content');
+    const preview = codeBlock.querySelector('.code-preview');
+    
+    if (content.classList.contains('expanded')) {
+        // Collapse
+        content.classList.remove('expanded');
+        preview.style.display = 'block';
+        button.textContent = content.querySelector('pre code').textContent.split('\n').length > 1 ? 'Show more' : 'Show code';
+    } else {
+        // Expand
+        content.classList.add('expanded');
+        preview.style.display = 'none';
+        button.textContent = 'Hide code';
+    }
+}
+
+// Execute Python script function
+async function executePythonScript(executionId, encodedScript, sessionId) {
+    const scriptContent = decodeURIComponent(encodedScript);
+    const resultDiv = document.getElementById(`result-${executionId}`);
+    const plotContainer = document.getElementById(`plot-${executionId}`);
+    const outputContainer = document.getElementById(`output-${executionId}`);
+    const executeBtn = document.querySelector(`[data-execution-id="${executionId}"] .execute-python-btn`);
+    
+    // Show loading state
+    executeBtn.textContent = '🔄 Executing...';
+    executeBtn.disabled = true;
+    resultDiv.style.display = 'block';
+    plotContainer.innerHTML = '<div class="loading">Executing Python script...</div>';
+    outputContainer.innerHTML = '';
+    
+    try {
+        const response = await fetch("{% url 'execute_python_script' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                script_content: scriptContent,
+                session_id: sessionId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Display the plot
+            plotContainer.innerHTML = `
+                <div class="plot-display">
+                    <img src="${data.plot_url}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <button class="download-plot-btn" onclick="downloadPlot('${data.plot_url}', '${data.plot_filename}')">
+                        📥 Download Plot
+                    </button>
+                </div>
+            `;
+            
+            // Show execution output
+            if (data.stdout) {
+                outputContainer.innerHTML += `<div class="stdout"><strong>Output:</strong><pre>${data.stdout}</pre></div>`;
+            }
+            if (data.stderr) {
+                outputContainer.innerHTML += `<div class="stderr"><strong>Errors:</strong><pre>${data.stderr}</pre></div>`;
+            }
+            
+            executeBtn.textContent = '✅ Executed';
+        } else {
+            plotContainer.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+            if (data.stdout) {
+                outputContainer.innerHTML += `<div class="stdout"><strong>Output:</strong><pre>${data.stdout}</pre></div>`;
+            }
+            if (data.stderr) {
+                outputContainer.innerHTML += `<div class="stderr"><strong>Errors:</strong><pre>${data.stderr}</pre></div>`;
+            }
+            executeBtn.textContent = '❌ Failed';
+        }
+    } catch (error) {
+        plotContainer.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+        executeBtn.textContent = '❌ Failed';
+    }
+}
+
+// Download plot function
+function downloadPlot(plotUrl, filename) {
+    const link = document.createElement('a');
+    link.href = plotUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Call on page load with a small delay to ensure DOM is ready
+setTimeout(() => {
+    processExistingMessages();
+    loadExistingFeedback();
+    updateFAQButtonStates();
+}, 500);
+
+// Also call when DOM content is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        loadExistingFeedback();
+        updateFAQButtonStates();
+    }, 100);
+});
+
+// Additional attempt after a longer delay to ensure everything is loaded
+setTimeout(() => {
+    loadExistingFeedback();
+    updateFAQButtonStates();
+}, 1000);
+
+// Add a manual refresh function for debugging
+window.refreshFeedbackState = function() {
+    console.log('Manual refresh of feedback state...');
+    loadExistingFeedback();
+};
+
+// Feedback submission function
+async function submitFeedback(feedbackType, sessionId, messageId, event) {
+    try {
+        const response = await fetch("{% url 'feedback' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                feedback_type: feedbackType,
+                session_id: sessionId,
+                message_id: messageId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Find the clicked button
+            const clickedBtn = event.target;
+            const feedbackContainer = clickedBtn.closest('.feedback-buttons');
+            
+            if (feedbackContainer) {
+                const likeBtn = feedbackContainer.querySelector('.like-btn');
+                const dislikeBtn = feedbackContainer.querySelector('.dislike-btn');
+                
+                // Remove all active states first
+                likeBtn.classList.remove('active');
+                dislikeBtn.classList.remove('active');
+                
+                // Apply the correct active state based on the response
+                if (data.feedback_type === 'like') {
+                    likeBtn.classList.add('active');
+                } else if (data.feedback_type === 'dislike') {
+                    dislikeBtn.classList.add('active');
+                }
+                
+                // If this was a new message and feedback was added, update the message ID
+                if (messageId === 'new' && data.message_id) {
+                    feedbackContainer.setAttribute('data-message-id', data.message_id);
+                }
+            }
+        } else {
+            console.error('Feedback submission failed:', data.error);
+        }
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+    }
+}
+
+// Add to FAQ function
+async function addToFAQ(sessionId, messageId, event) {
+    try {
+        const clickedBtn = event.target;
+        const isInFAQ = clickedBtn.classList.contains('in-faq');
+        const action = isInFAQ ? 'remove' : 'add';
+        
+        const response = await fetch("{% url 'add_to_faq' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                session_id: sessionId,
+                message_id: messageId,
+                action: action
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success feedback
+            const originalText = clickedBtn.textContent;
+            const successText = action === 'add' ? '✅ Added to FAQ' : '✅ Removed from FAQ';
+            clickedBtn.textContent = successText;
+            clickedBtn.style.background = '#38a169';
+            clickedBtn.disabled = true;
+            
+            // Update button state
+            if (action === 'add') {
+                clickedBtn.classList.add('in-faq');
+                clickedBtn.textContent = 'Delete from FAQ';
+                clickedBtn.style.background = '#e53e3e';
+            } else {
+                clickedBtn.classList.remove('in-faq');
+                clickedBtn.textContent = 'Add to FAQ';
+                clickedBtn.style.background = '#38a169';
+            }
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                clickedBtn.disabled = false;
+            }, 3000);
+        } else {
+            console.error('FAQ action failed:', data.error);
+            // Show error feedback
+            const originalText = clickedBtn.textContent;
+            clickedBtn.textContent = '❌ Failed';
+            clickedBtn.style.background = '#e53e3e';
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                clickedBtn.textContent = originalText;
+                clickedBtn.style.background = isInFAQ ? '#e53e3e' : '#38a169';
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Error with FAQ action:', error);
+        // Show error feedback
+        const clickedBtn = event.target;
+        const originalText = clickedBtn.textContent;
+        clickedBtn.textContent = '❌ Error';
+        clickedBtn.style.background = '#e53e3e';
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+            clickedBtn.textContent = originalText;
+            clickedBtn.style.background = clickedBtn.classList.contains('in-faq') ? '#e53e3e' : '#38a169';
+        }, 3000);
+    }
+}
+
+// Check FAQ status for a session
+async function checkFAQStatus(sessionId) {
+    try {
+        const response = await fetch(`{% url 'check_faq_status' 0 %}`.replace('0', sessionId));
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.is_in_faq;
+        }
+    } catch (error) {
+        console.error('Error checking FAQ status:', error);
+    }
+    return false;
+}
+
+// Update FAQ button states for all messages
+async function updateFAQButtonStates() {
+    const faqButtons = document.querySelectorAll('.faq-btn');
+    for (const btn of faqButtons) {
+        const sessionId = btn.getAttribute('data-session-id');
+        if (sessionId) {
+            const isInFAQ = await checkFAQStatus(sessionId);
+            if (isInFAQ) {
+                btn.classList.add('in-faq');
+                btn.textContent = 'Delete from FAQ';
+                btn.style.background = '#e53e3e';
+            } else {
+                btn.classList.remove('in-faq');
+                btn.textContent = 'Add to FAQ';
+                btn.style.background = '#38a169';
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

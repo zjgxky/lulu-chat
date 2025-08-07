@@ -1,0 +1,165 @@
+{% extends "chatbot_app/base.html" %}
+
+{% block title %}Settings - Lulu Chat{% endblock %}
+
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<style>
+/* Toggle switcher styles */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #3182ce;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+</style>
+
+<div style="max-width: 600px; margin: 0 auto;">
+    <!-- Settings Header -->
+    <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                <span style="color: white; font-size: 1.2rem;">⚙️</span>
+            </div>
+            <div>
+                <h2 style="margin: 0; color: #2d3748; font-size: 1.5rem;">Settings</h2>
+                <p style="margin: 4px 0 0 0; color: #718096; font-size: 0.95rem;">Configure your chatbot preferences</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar Header Settings -->
+    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px;">
+        <h3 style="margin: 0 0 20px 0; color: #2d3748; font-size: 1.2rem;">Sidebar Header</h3>
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
+            <div>
+                <div style="font-weight: 500; color: #2d3748; margin-bottom: 4px;">Show Lulu Branding</div>
+                <div style="font-size: 0.9rem; color: #718096;">Display logo and "Lulu Chat" in sidebar header</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="lulu-branding-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div style="margin-top: 16px; padding: 12px; background: #f7fafc; border-radius: 8px; font-size: 0.9rem; color: #4a5568;">
+            <strong>When ON:</strong> Shows Lululemon logo and "Lulu Chat" text<br>
+            <strong>When OFF:</strong> Shows only "Chatbot" text
+        </div>
+    </div>
+    
+    <!-- Save Button -->
+    <div style="text-align: center; margin-top: 32px;">
+        <button onclick="saveSettings()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; padding: 14px 32px; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease;">
+            Save Settings
+        </button>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<div id="logo-url" data-url="{{ logo_url }}" style="display: none;"></div>
+
+<script>
+// Load current setting
+document.addEventListener('DOMContentLoaded', function() {
+    const brandingToggle = document.getElementById('lulu-branding-toggle');
+    const currentSetting = localStorage.getItem('lulu-branding') || 'true';
+    brandingToggle.checked = currentSetting === 'true';
+    
+    // Add toggle functionality
+    brandingToggle.addEventListener('change', function() {
+        const isEnabled = this.checked;
+        localStorage.setItem('lulu-branding', isEnabled);
+        updateSidebarHeader(isEnabled);
+    });
+});
+
+function saveSettings() {
+    const brandingToggle = document.getElementById('lulu-branding-toggle');
+    const isEnabled = brandingToggle.checked;
+    localStorage.setItem('lulu-branding', isEnabled);
+    
+    // Show success message
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Settings Saved!';
+    button.style.background = 'linear-gradient(135deg, #38a169 0%, #2f855a 100%)';
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    }, 2000);
+}
+
+function updateSidebarHeader(isEnabled) {
+    const sidebarHeader = document.querySelector('.sidebar-header');
+    const logoUrl = document.getElementById('logo-url').getAttribute('data-url');
+    
+    if (sidebarHeader) {
+        if (isEnabled) {
+            // Show Lulu branding
+            sidebarHeader.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <img src="${logoUrl}" alt="Lululemon Logo" style="width: 30px; height: 30px; margin-right: 16px; object-fit: cover; object-position: center;">
+                    <div class="sidebar-title" style="font-size: 1.4rem; line-height: 40px;">Lulu Chat</div>
+                </div>
+            `;
+        } else {
+            // Show simple "Chatbot" text
+            sidebarHeader.innerHTML = `
+                <div class="sidebar-title" style="font-size: 1.4rem; font-weight: 600; color: #1a202c; margin: 0;">Chatbot</div>
+            `;
+        }
+    }
+}
+
+// Initialize sidebar header on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const brandingToggle = document.getElementById('lulu-branding-toggle');
+    if (brandingToggle) {
+        const isEnabled = brandingToggle.checked;
+        updateSidebarHeader(isEnabled);
+    }
+});
+</script>
+{% endblock %} 

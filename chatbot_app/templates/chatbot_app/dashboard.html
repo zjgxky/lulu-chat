@@ -1,0 +1,153 @@
+{% extends "chatbot_app/base.html" %}
+
+{% block title %}Dashboard - Lulu Chat{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <!-- Statistics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
+        <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                    <span style="color: white; font-size: 1.5rem;">💬</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.3rem;">{{ total_sessions }}</h3>
+                    <p style="margin: 4px 0 0 0; color: #718096; font-size: 0.9rem;">Total Sessions</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                    <span style="color: white; font-size: 1.5rem;">👍</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.3rem;">{{ total_likes }}</h3>
+                    <p style="margin: 4px 0 0 0; color: #718096; font-size: 0.9rem;">Total Likes</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                    <span style="color: white; font-size: 1.5rem;">👎</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.3rem;">{{ total_dislikes }}</h3>
+                    <p style="margin: 4px 0 0 0; color: #718096; font-size: 0.9rem;">Total Dislikes</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                    <span style="color: white; font-size: 1.5rem;">📊</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.3rem;">{{ total_feedback }}</h3>
+                    <p style="margin: 4px 0 0 0; color: #718096; font-size: 0.9rem;">Total Feedback</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Feedback Summary -->
+    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 32px;">
+        <h3 style="color: #2d3748; margin-bottom: 16px; font-size: 1.2rem;">📈 Feedback Summary</h3>
+        <p style="color: #4a5568; line-height: 1.6; margin: 0;">
+            The chatbot has received <strong>{{ total_likes }}</strong> likes and <strong>{{ total_dislikes }}</strong> dislikes from users.
+        </p>
+        {% if total_feedback > 0 %}
+            <p style="color: #4a5568; line-height: 1.6; margin: 8px 0 0 0;">
+                Overall, users are satisfied with the chatbot's responses! 🎉
+            </p>
+        {% endif %}
+    </div>
+    
+    <!-- FAQ Sessions -->
+    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 32px;">
+        <h3 style="color: #2d3748; margin-bottom: 20px; font-size: 1.2rem;">📚 FAQ Sessions</h3>
+        {% if faq_sessions %}
+            {% for session in faq_sessions %}
+            <div style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #38a169; transition: all 0.2s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <a href="{% url 'chat_session' session.id %}" style="text-decoration: none; color: inherit;">
+                            <h4 style="color: #2d3748; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600;">
+                                Session #{{ session.id }}
+                            </h4>
+                            {% if session.preview %}
+                                <p style="color: #4a5568; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.4;">
+                                    {{ session.preview|truncatechars:100 }}
+                                </p>
+                            {% endif %}
+                            <div style="font-size: 0.85rem; color: #718096;">
+                                Session created: {{ session.created_at|date:"M j, Y g:i A" }}<br>
+                                Added to FAQ: {{ session.faq_created_at|date:"M j, Y g:i A" }}
+                            </div>
+                        </a>
+                    </div>
+                    <div style="margin-left: 16px;">
+                        <a href="{% url 'chat_session' session.id %}" style="display: inline-block; padding: 8px 16px; background: #38a169; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s ease;">
+                            View Session
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">📝</div>
+                <p style="color: #718096; line-height: 1.6; margin: 0;">
+                    No FAQ sessions yet. Add conversations to FAQ using the "Add to FAQ" button in chat sessions.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Recent Sessions with Feedback -->
+    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h3 style="color: #2d3748; margin-bottom: 20px; font-size: 1.2rem;">💬 Recent Sessions with Feedback</h3>
+        {% if sessions_with_feedback %}
+            {% for session_data in sessions_with_feedback %}
+            <div style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3182ce; transition: all 0.2s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <a href="{% url 'chat_session' session_data.session.id %}" style="text-decoration: none; color: inherit;">
+                            <h4 style="color: #2d3748; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600;">
+                                Session #{{ session_data.session.id }}
+                            </h4>
+                            <div style="font-size: 0.85rem; color: #718096; margin-bottom: 8px;">
+                                Created: {{ session_data.session.created_at|date:"M j, Y g:i A" }}
+                            </div>
+                            <div style="display: flex; gap: 16px; font-size: 0.9rem;">
+                                <span style="color: #38a169;">👍 {{ session_data.likes }} likes</span>
+                                <span style="color: #e53e3e;">👎 {{ session_data.dislikes }} dislikes</span>
+                            </div>
+                        </a>
+                    </div>
+                    <div style="margin-left: 16px;">
+                        <a href="{% url 'chat_session' session_data.session.id %}" style="display: inline-block; padding: 8px 16px; background: #3182ce; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s ease;">
+                            View Session
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">💬</div>
+                <p style="color: #718096; line-height: 1.6; margin: 0;">
+                    No sessions with feedback yet. Start chatting and use the like/dislike buttons to provide feedback!
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

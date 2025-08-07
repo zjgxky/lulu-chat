@@ -1,0 +1,5 @@
+Django>=5.2.4
+requests>=2.32.0
+gunicorn
+dj_database_url
+psycopg2-binary
