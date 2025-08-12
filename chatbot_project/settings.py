@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "g4=w_%%fc4plvnu#98vifr!%76z05!=r$2m&yk9$pol-+6713q"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', "127.0.0.1"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # Application definition
 
@@ -63,6 +63,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "chatbot_app.context_processors.faq_sessions",
             ],
         },
     },
@@ -129,8 +130,10 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Dify API integration
-# DIFY_API_KEY = os.environ.get('DIFY_API_KEY')
-DIFY_API_KEY = "app-ExZuBglMcJnH7LImAa5EU3Vh"
-DIFY_API_URL = "https://api.dify.ai/v1/chat-messages"
+DIFY_API_KEY = os.environ.get('DIFY_API_KEY', 'app-1l9pF7CSYU498mAO28iA0zRF')
+DIFY_API_URL = os.environ.get('DIFY_API_URL', 'https://api.dify.ai/v1/chat-messages')
+
+# Add timeout settings for external API calls
+DIFY_TIMEOUT = int(os.environ.get('DIFY_TIMEOUT', '30'))  # 30 seconds default
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

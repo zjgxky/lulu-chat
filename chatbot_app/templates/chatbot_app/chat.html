@@ -1,6 +1,6 @@
 {% extends "chatbot_app/base.html" %}
 
-{% block title %}Chat Session #{{ current_session.id }} - Lulu Chat{% endblock %}
+{% block title %}Chat Session #{{ current_session.id }} - AI for Insights{% endblock %}
 
 {% block page_title %}{% endblock %}
 
@@ -423,6 +423,166 @@
         text-align: center;
     }
     
+    /* JSON Response Styles */
+    .json-response-container {
+        background: #f8fafe;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 16px 0;
+    }
+    
+    .json-section {
+        margin-bottom: 24px;
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+    
+    .json-section:last-child {
+        margin-bottom: 0;
+    }
+    
+    .section-title {
+        background: #f3f4f6;
+        padding: 12px 16px;
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .section-content {
+        padding: 16px;
+    }
+    
+    .section-content p {
+        margin: 0;
+        line-height: 1.6;
+        color: #4b5563;
+    }
+    
+    .steps-list {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .steps-list li {
+        margin: 8px 0;
+        line-height: 1.6;
+        color: #4b5563;
+    }
+    
+    .math-formula {
+        margin: 16px 0;
+        text-align: center;
+        background: #f9fafb;
+        padding: 16px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .table-container table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+    
+    .table-container th {
+        background: #f3f4f6;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .table-container td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #4b5563;
+    }
+    
+    .table-container tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .table-container tr:hover {
+        background: #f9fafb;
+    }
+    
+    .code-copy-btn {
+        background: #6b7280;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .code-copy-btn:hover {
+        background: #4b5563;
+    }
+    
+    .auto-plot-display {
+        margin-top: 16px;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .plot-title {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 12px;
+        font-size: 1rem;
+    }
+    
+    .plot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .download-plot-btn {
+        background: #10b981;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .download-plot-btn:hover {
+        background: #059669;
+    }
+    
+    .plot-error {
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        color: #dc2626;
+    }
+    
     /* Python execution styles */
     .python-execution {
         margin-top: 12px;
@@ -543,7 +703,6 @@
             {% for message in chat_history %}
                 <div class="message-container">
                     <div class="message message-{{ message.sender }}">
-                        <div class="{{ message.sender }}">{{ message.sender|title }}:</div>
                         <div class="message-content">
                             {% if message.sender == 'bot' %}
                                 <div class="markdown-content" data-text="{{ message.text|escapejs }}" data-message-id="{{ message.id }}">{{ message.text|linebreaks }}</div>
@@ -622,7 +781,6 @@ chatForm.onsubmit = async function(e) {
     // Show user message immediately
     chatMessages.innerHTML += `
         <div class="message message-user">
-            <div class="user">User:</div>
             <div class="message-content">${message}</div>
         </div>
     `;
@@ -633,7 +791,6 @@ chatForm.onsubmit = async function(e) {
     const streamingId = `streaming-${Date.now()}`;
     chatMessages.innerHTML += `
         <div class="message message-bot" id="${streamingId}">
-            <div class="bot">Bot:</div>
             <div class="message-content">
                 <div class="streaming-content"></div>
             </div>
@@ -692,60 +849,101 @@ chatForm.onsubmit = async function(e) {
                             
                             const processData = await processResponse.json();
                             const enhancedReply = processData.reply;
+                            const isJsonResponse = processData.is_json_response;
                             
-                            // Process markdown and display the enhanced response
-                            let processedReply = enhancedReply;
+                            let finalContent;
                             
-                            // First, handle code blocks that contain markdown tables
-                            processedReply = processedReply.replace(/```md\s*\n([\s\S]*?)\n```/g, (match, content) => {
-                                return marked.parse(content);
-                            });
-                            
-                            // Handle LaTeX math formulas wrapped in $$
-                            processedReply = processedReply.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
-                                try {
-                                    return katex.renderToString(content, { displayMode: true });
-                                } catch (error) {
-                                    console.log('KaTeX error:', error);
-                                    return `<pre><code class="language-latex">${content}</code></pre>`;
-                                }
-                            });
-                            
-                            // Parse the markdown first
-                            let parsedReply = marked.parse(processedReply);
-                            
-                            // Then, replace the generated <pre><code> blocks with expandable ones
-                            parsedReply = parsedReply.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
-                                const lang = language || 'text';
-                                const lines = content.split('\n');
-                                const preview = lines.slice(0, 1).join('\n');
-                                const hasMore = lines.length > 1;
+                            if (isJsonResponse) {
+                                // For JSON responses, the HTML is already formatted
+                                finalContent = enhancedReply;
                                 
-                                let codeBlockHtml = `
-                                    <div class="code-block">
-                                        <div class="code-header">
-                                            <span class="code-language">${lang}</span>
-                                            <button class="code-toggle" onclick="toggleCodeBlock(this)">
-                                                ${hasMore ? 'Show more' : 'Show code'}
-                                            </button>
-                                        </div>
-                                        <div class="code-content collapsed">
-                                            <pre><code class="language-${lang}">${content}</code></pre>
-                                        </div>
-                                        <div class="code-preview">
-                                            <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
-                                        </div>
-                                    </div>
-                                `;
+                                // Process special elements that need JavaScript handling
+                                setTimeout(() => {
+                                    // Handle LaTeX math formulas
+                                    const mathElements = document.querySelectorAll('.math-formula');
+                                    mathElements.forEach(elem => {
+                                        const formula = elem.getAttribute('data-formula');
+                                        if (formula) {
+                                            try {
+                                                elem.innerHTML = katex.renderToString(formula, { displayMode: true });
+                                            } catch (error) {
+                                                console.log('KaTeX error:', error);
+                                                elem.innerHTML = `<pre><code class="language-latex">${formula}</code></pre>`;
+                                            }
+                                        }
+                                    });
+                                    
+                                    // Process markdown tables in table-container
+                                    const tableContainers = document.querySelectorAll('.table-container');
+                                    tableContainers.forEach(container => {
+                                        const markdownContent = container.textContent || container.innerText;
+                                        if (markdownContent.includes('|')) {
+                                            container.innerHTML = marked.parse(markdownContent);
+                                        }
+                                    });
+                                    
+                                    // Syntax highlighting for code blocks
+                                    if (typeof Prism !== 'undefined') {
+                                        Prism.highlightAll();
+                                    }
+                                }, 100);
                                 
-                                return codeBlockHtml;
-                            });
+                            } else {
+                                // For non-JSON responses, use the original processing logic
+                                let processedReply = enhancedReply;
+                                
+                                // First, handle code blocks that contain markdown tables
+                                processedReply = processedReply.replace(/```md\s*\n([\s\S]*?)\n```/g, (match, content) => {
+                                    return marked.parse(content);
+                                });
+                                
+                                // Handle LaTeX math formulas wrapped in $$
+                                processedReply = processedReply.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                                    try {
+                                        return katex.renderToString(content, { displayMode: true });
+                                    } catch (error) {
+                                        console.log('KaTeX error:', error);
+                                        return `<pre><code class="language-latex">${content}</code></pre>`;
+                                    }
+                                });
+                                
+                                // Parse the markdown first
+                                let parsedReply = marked.parse(processedReply);
+                                
+                                // Then, replace the generated <pre><code> blocks with expandable ones
+                                parsedReply = parsedReply.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
+                                    const lang = language || 'text';
+                                    const lines = content.split('\n');
+                                    const preview = lines.slice(0, 1).join('\n');
+                                    const hasMore = lines.length > 1;
+                                    
+                                    let codeBlockHtml = `
+                                        <div class="code-block">
+                                            <div class="code-header">
+                                                <span class="code-language">${lang}</span>
+                                                <button class="code-toggle" onclick="toggleCodeBlock(this)">
+                                                    ${hasMore ? 'Show more' : 'Show code'}
+                                                </button>
+                                            </div>
+                                            <div class="code-content collapsed">
+                                                <pre><code class="language-${lang}">${content}</code></pre>
+                                            </div>
+                                            <div class="code-preview">
+                                                <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
+                                            </div>
+                                        </div>
+                                    `;
+                                    
+                                    return codeBlockHtml;
+                                });
+                                
+                                finalContent = `<div class="markdown-content">${parsedReply}</div>`;
+                            }
                             
                             // Replace the streaming content with the processed content
                             streamingElem.innerHTML = `
-                                <div class="bot">Bot:</div>
                                 <div class="message-content">
-                                    <div class="markdown-content">${parsedReply}</div>
+                                    ${finalContent}
                                 </div>
                             `;
                             
@@ -777,7 +975,6 @@ chatForm.onsubmit = async function(e) {
                             
                         } else if (data.type === 'error') {
                             streamingElem.innerHTML = `
-                                <div class="bot">Bot:</div>
                                 <div class="message-content">Error: ${data.error}</div>
                             `;
                         }
@@ -793,7 +990,6 @@ chatForm.onsubmit = async function(e) {
         const streamingElem = document.getElementById(streamingId);
         if (streamingElem) {
             streamingElem.innerHTML = `
-                <div class="bot">Bot:</div>
                 <div class="message-content">Sorry, there was an error processing your message.</div>
             `;
         }
@@ -941,6 +1137,74 @@ function toggleCodeBlock(button) {
         preview.style.display = 'none';
         button.textContent = 'Hide code';
     }
+}
+
+// Copy code to clipboard
+function copyToClipboard(button, elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error('Element not found:', elementId);
+        return;
+    }
+    
+    const text = element.textContent || element.innerText;
+    
+    // Use the modern clipboard API if available
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Visual feedback
+            const originalText = button.textContent;
+            button.textContent = '✓ Copied!';
+            button.style.background = '#10b981';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            fallbackCopyTextToClipboard(text, button);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyTextToClipboard(text, button);
+    }
+}
+
+// Fallback copy function for older browsers
+function fallbackCopyTextToClipboard(text, button) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            // Visual feedback
+            const originalText = button.textContent;
+            button.textContent = '✓ Copied!';
+            button.style.background = '#10b981';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 2000);
+        } else {
+            console.error('Fallback: Copying text command was unsuccessful');
+        }
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+    }
+    
+    document.body.removeChild(textArea);
 }
 
 // Execute Python script function

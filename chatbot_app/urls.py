@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import chatbot_view, session_list_view, new_session_view, dify_proxy, dify_streaming_proxy, process_streamed_response, delete_session_view, login_view, logout_view, dashboard_view, feedback_view, get_feedback_state, execute_python_script_view, add_to_faq_view, check_faq_status, settings_view
+from .views import chatbot_view, session_list_view, new_session_view, dify_proxy, dify_streaming_proxy, process_streamed_response, delete_session_view, login_view, logout_view, dashboard_view, feedback_view, get_feedback_state, execute_python_script_view, add_to_faq_view, check_faq_status, settings_view, test_formatting_view, debug_connection_view
 
 urlpatterns = [
     path("login/", login_view, name="login"),
@@ -19,4 +19,6 @@ urlpatterns = [
     path("api/execute-python/", execute_python_script_view, name="execute_python_script"),
     path("api/add-to-faq/", add_to_faq_view, name="add_to_faq"),
     path("api/check-faq-status/<int:session_id>/", check_faq_status, name="check_faq_status"),
+    path("test-formatting/", test_formatting_view, name="test_formatting"),
+    path("debug-connection/", debug_connection_view, name="debug_connection"),
 ]

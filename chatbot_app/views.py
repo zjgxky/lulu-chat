@@ -87,13 +87,16 @@ def post_to_dify(query, user_id, conversation_id=None, files=None, response_mode
         "files": files or []
     }
     
+    # Get timeout from settings
+    timeout = getattr(settings, 'DIFY_TIMEOUT', 30)
+    
     if response_mode == "streaming":
         # For streaming, return the response object directly
-        response = requests.post(url, headers=headers, json=payload, stream=True)
+        response = requests.post(url, headers=headers, json=payload, stream=True, timeout=timeout)
         return response
     else:
         # For blocking, return JSON response
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
         return response.json()
 
 @csrf_exempt
@@ -352,30 +355,61 @@ def process_streamed_response(request):
     try:
         session = ChatSession.objects.get(id=session_id)
         
-        # Check for Python code blocks and execute them automatically
-        python_blocks = extract_python_blocks(full_reply)
+        # Check if the response is in JSON format
         enhanced_reply = full_reply
+        is_json_response = False
         
-        for i, script_content in enumerate(python_blocks):
-            try:
-                result = execute_python_script(script_content, session_id)
-                if result['success']:
-                    # Insert plot display right after the Python code block
-                    plot_html = f'\n\n<div class="auto-plot-display">\n<div class="plot-title">Generated Plot {i+1}</div>\n<div class="plot-container">\n<img src="{result["plot_url"]}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">\n<button class="download-plot-btn" onclick="downloadPlot(\'{result["plot_url"]}\', \'{result["plot_filename"]}\')">📥 Download Plot</button>\n</div>\n</div>\n\n'
-                    
-                    # Find the exact Python code block and insert plot after it
-                    code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                    if code_block_start != -1:
-                        # Find the end of this specific code block
-                        code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                        enhanced_reply = enhanced_reply[:code_block_end] + plot_html + enhanced_reply[code_block_end:]
-                    else:
-                        # Fallback: append at the end
-                        enhanced_reply += plot_html
+        try:
+            # Try to parse the full_reply as JSON
+            json_response = json.loads(full_reply.strip())
+            
+            # Check if it has the expected JSON structure
+            if isinstance(json_response, dict) and any(key in json_response for key in 
+                ['definition', 'math_formula', 'steps', 'sql_query', 'table_markdown', 'summary', 'python_code']):
+                is_json_response = True
+                enhanced_reply = format_json_response(json_response, session_id)
+        except (json.JSONDecodeError, TypeError):
+            # Not a JSON response, continue with normal processing
+            pass
+        
+        if not is_json_response:
+            # Original logic for non-JSON responses
+            # Check for Python code blocks and execute them automatically
+            python_blocks = extract_python_blocks(full_reply)
+            
+            for i, script_content in enumerate(python_blocks):
+                try:
+                    result = execute_python_script(script_content, session_id)
+                    if result['success']:
+                        # Insert plot display right after the Python code block
+                        plot_html = f'\n\n<div class="auto-plot-display">\n<div class="plot-title">Generated Plot {i+1}</div>\n<div class="plot-container">\n<img src="{result["plot_url"]}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">\n<button class="download-plot-btn" onclick="downloadPlot(\'{result["plot_url"]}\', \'{result["plot_filename"]}\')">📥 Download Plot</button>\n</div>\n</div>\n\n'
                         
-                else:
+                        # Find the exact Python code block and insert plot after it
+                        code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
+                        if code_block_start != -1:
+                            # Find the end of this specific code block
+                            code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
+                            enhanced_reply = enhanced_reply[:code_block_end] + plot_html + enhanced_reply[code_block_end:]
+                        else:
+                            # Fallback: append at the end
+                            enhanced_reply += plot_html
+                            
+                    else:
+                        # Insert error message after the Python code block
+                        error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {result.get("error", "Unknown error")}</div>\n</div>\n\n'
+                        
+                        code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
+                        if code_block_start != -1:
+                            # Find the end of this specific code block
+                            code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
+                            enhanced_reply = enhanced_reply[:code_block_end] + error_html + enhanced_reply[code_block_end:]
+                        else:
+                            # Fallback: append at the end
+                            enhanced_reply += error_html
+                            
+                except Exception as e:
                     # Insert error message after the Python code block
-                    error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {result.get("error", "Unknown error")}</div>\n</div>\n\n'
+                    error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {str(e)}</div>\n</div>\n\n'
                     
                     code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
                     if code_block_start != -1:
@@ -385,30 +419,19 @@ def process_streamed_response(request):
                     else:
                         # Fallback: append at the end
                         enhanced_reply += error_html
-                        
-            except Exception as e:
-                # Insert error message after the Python code block
-                error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {str(e)}</div>\n</div>\n\n'
-                
-                code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                if code_block_start != -1:
-                    # Find the end of this specific code block
-                    code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                    enhanced_reply = enhanced_reply[:code_block_end] + error_html + enhanced_reply[code_block_end:]
-                else:
-                    # Fallback: append at the end
-                    enhanced_reply += error_html
         
         # Save bot reply to DB
-        if full_reply:
+        if enhanced_reply:
             ChatMessage.objects.create(session=session, sender="bot", text=enhanced_reply)
         else:
             # Fallback if no reply was received
-            full_reply = "Sorry, no response received."
-            ChatMessage.objects.create(session=session, sender="bot", text=full_reply)
+            error_msg = "Sorry, no response received."
+            ChatMessage.objects.create(session=session, sender="bot", text=error_msg)
+            enhanced_reply = error_msg
         
         return JsonResponse({
-            "reply": enhanced_reply
+            "reply": enhanced_reply,
+            "is_json_response": is_json_response
         })
         
     except Exception as e:
@@ -531,6 +554,158 @@ def extract_python_blocks(text):
     matches = re.findall(pattern, text)
     return matches
 
+def format_json_response(json_data, session_id):
+    """Format the JSON response from the agent into a readable HTML structure"""
+    html_parts = []
+    
+    # Definition section
+    if json_data.get('definition'):
+        html_parts.append(f"""
+        <div class="json-section">
+            <h3 class="section-title">📖 Definition</h3>
+            <div class="section-content">
+                <p>{json_data['definition']}</p>
+            </div>
+        </div>
+        """)
+    
+    # Math formula section
+    if json_data.get('math_formula') and isinstance(json_data['math_formula'], list):
+        formulas_html = ""
+        for i, formula in enumerate(json_data['math_formula']):
+            if formula.strip():
+                # Clean up the formula - remove extra escaping
+                clean_formula = formula.replace('\\n', '').replace('\\t', '').strip()
+                formulas_html += f'<div class="math-formula" data-formula="{clean_formula}">$${clean_formula}$$</div>\n'
+        
+        if formulas_html:
+            html_parts.append(f"""
+            <div class="json-section">
+                <h3 class="section-title">🧮 Mathematical Formulas</h3>
+                <div class="section-content">
+                    {formulas_html}
+                </div>
+            </div>
+            """)
+    
+    # Steps section
+    if json_data.get('steps') and isinstance(json_data['steps'], list):
+        steps_html = "<ol class='steps-list'>\n"
+        for step in json_data['steps']:
+            if step.strip():
+                steps_html += f"<li>{step}</li>\n"
+        steps_html += "</ol>"
+        
+        html_parts.append(f"""
+        <div class="json-section">
+            <h3 class="section-title">📋 Analysis Steps</h3>
+            <div class="section-content">
+                {steps_html}
+            </div>
+        </div>
+        """)
+    
+    # SQL Query section
+    if json_data.get('sql_query'):
+        html_parts.append(f"""
+        <div class="json-section">
+            <h3 class="section-title">💾 SQL Query</h3>
+            <div class="section-content">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">sql</span>
+                        <button class="code-copy-btn" onclick="copyToClipboard(this, 'sql-query')">📋 Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre><code class="language-sql" id="sql-query">{json_data['sql_query']}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """)
+    
+    # Table section
+    if json_data.get('table_markdown') and json_data['table_markdown'].strip():
+        html_parts.append(f"""
+        <div class="json-section">
+            <h3 class="section-title">📊 Results Table</h3>
+            <div class="section-content">
+                <div class="table-container">
+                    {json_data['table_markdown']}
+                </div>
+            </div>
+        </div>
+        """)
+    
+    # Summary section
+    if json_data.get('summary'):
+        html_parts.append(f"""
+        <div class="json-section">
+            <h3 class="section-title">📈 Summary</h3>
+            <div class="section-content">
+                <p>{json_data['summary']}</p>
+            </div>
+        </div>
+        """)
+    
+    # Python code section - execute and show plot
+    if json_data.get('python_code') and json_data['python_code'].strip():
+        python_code = json_data['python_code']
+        
+        # Execute the Python code
+        plot_html = ""
+        try:
+            result = execute_python_script(python_code, session_id)
+            if result['success']:
+                plot_html = f"""
+                <div class="auto-plot-display">
+                    <div class="plot-title">Generated Visualization</div>
+                    <div class="plot-container">
+                        <img src="{result['plot_url']}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <button class="download-plot-btn" onclick="downloadPlot('{result['plot_url']}', '{result['plot_filename']}')">📥 Download Plot</button>
+                    </div>
+                </div>
+                """
+            else:
+                plot_html = f"""
+                <div class="plot-error">
+                    <div class="error">❌ Plot Generation Failed: {result.get('error', 'Unknown error')}</div>
+                </div>
+                """
+        except Exception as e:
+            plot_html = f"""
+            <div class="plot-error">
+                <div class="error">❌ Plot Generation Failed: {str(e)}</div>
+            </div>
+            """
+        
+        html_parts.append(f"""
+        <div class="json-section">
+            <h3 class="section-title">🐍 Python Code & Visualization</h3>
+            <div class="section-content">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">python</span>
+                        <button class="code-copy-btn" onclick="copyToClipboard(this, 'python-code')">📋 Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre><code class="language-python" id="python-code">{python_code}</code></pre>
+                    </div>
+                </div>
+                {plot_html}
+            </div>
+        </div>
+        """)
+    
+    # Combine all sections
+    final_html = f"""
+    <div class="json-response-container">
+        {''.join(html_parts)}
+    </div>
+    """
+    
+    return final_html
+
 def execute_python_script(script_content, session_id):
     """Execute Python script and return plot file path if generated"""
     try:
@@ -538,10 +713,47 @@ def execute_python_script(script_content, session_id):
         temp_dir = Path(tempfile.gettempdir()) / f"dify_plots_{session_id}_{uuid.uuid4().hex[:8]}"
         temp_dir.mkdir(exist_ok=True)
         
+        # Prepare the script with proper matplotlib backend and necessary imports
+        enhanced_script = f"""
+import os
+import sys
+
+try:
+    # Set matplotlib backend before importing pyplot
+    import matplotlib
+    matplotlib.use('Agg')  # Use non-interactive backend for server environments
+    import matplotlib.pyplot as plt
+    print("Matplotlib imported successfully")
+except ImportError as e:
+    print(f"Error importing matplotlib: {{e}}")
+    sys.exit(1)
+
+try:
+    import numpy as np
+    print("NumPy imported successfully")
+except ImportError:
+    print("NumPy not available")
+
+try:
+    import pandas as pd
+    print("Pandas imported successfully")  
+except ImportError:
+    print("Pandas not available")
+
+# Change to the working directory
+os.chdir(r'{temp_dir}')
+print(f"Working directory: {{os.getcwd()}}")
+
+# Original script content
+{script_content}
+
+print("Script execution completed")
+"""
+        
         # Create a temporary Python file
         script_file = temp_dir / "script.py"
         with open(script_file, 'w') as f:
-            f.write(script_content)
+            f.write(enhanced_script)
         
         # Execute the script
         result = subprocess.run(
@@ -557,6 +769,15 @@ def execute_python_script(script_content, session_id):
         for ext in ['png', 'jpg', 'jpeg', 'svg', 'pdf']:
             plot_files.extend(temp_dir.glob(f"*.{ext}"))
         
+        # Check if script executed successfully
+        if result.returncode != 0:
+            return {
+                'success': False,
+                'error': f'Script execution failed (exit code {result.returncode})',
+                'stdout': result.stdout,
+                'stderr': result.stderr
+            }
+        
         if plot_files:
             # Return the first plot file found
             plot_file = plot_files[0]
@@ -564,7 +785,7 @@ def execute_python_script(script_content, session_id):
             plots_dir = Path(settings.BASE_DIR) / "static" / "plots"
             plots_dir.mkdir(parents=True, exist_ok=True)
             
-            plot_filename = f"plot_{session_id}_{uuid.uuid4().hex[:8]}.{plot_file.suffix}"
+            plot_filename = f"plot_{session_id}_{uuid.uuid4().hex[:8]}{plot_file.suffix}"
             plot_path = plots_dir / plot_filename
             
             import shutil
@@ -578,9 +799,16 @@ def execute_python_script(script_content, session_id):
                 'stderr': result.stderr
             }
         else:
+            # List all files in temp directory for debugging
+            try:
+                temp_files = list(temp_dir.iterdir())
+                file_list = [f.name for f in temp_files]
+            except:
+                file_list = []
+            
             return {
                 'success': False,
-                'error': 'No plot file generated',
+                'error': f'No plot file generated. Files in temp dir: {file_list}',
                 'stdout': result.stdout,
                 'stderr': result.stderr
             }
@@ -752,3 +980,69 @@ def settings_view(request):
         "sessions": ChatSession.objects.order_by('-created_at'),
         "logo_url": static('Lululemon-Emblem-700x394.png'),
     })
+
+@require_login
+def test_formatting_view(request):
+    """Test view for formatting (can be removed in production)"""
+    test_json = {
+        "definition": "This is a test definition to verify that the JSON formatting works correctly.",
+        "math_formula": ["FQY = \\frac{\\text{Number of positive transactions}}{\\text{Number of Active Guests}}"],
+        "steps": [
+            "1. Parse the JSON response from the agent",
+            "2. Extract each section (definition, formulas, steps, etc.)",
+            "3. Format each section with proper HTML and styling",
+            "4. Execute Python code and display plots",
+            "5. Render the complete formatted response"
+        ],
+        "sql_query": "SELECT t.customer_code, COUNT(*) as transaction_count FROM transactions t WHERE t.status = 'completed' GROUP BY t.customer_code ORDER BY transaction_count DESC;",
+        "table_markdown": "| Column | Value | Description |\n| --- | --- | --- |\n| FY2023 | 1.50 | Average frequency |\n| FY2024 | 1.65 | Improved performance |\n| FY2025 | 1.75 | Projected growth |",
+        "summary": "The test formatting demonstrates how JSON responses from the agent are parsed and displayed with proper sections, titles, and formatting.",
+        "python_code": "import matplotlib.pyplot as plt\nimport numpy as np\n\nx = np.linspace(0, 10, 100)\ny = np.sin(x)\n\nplt.figure(figsize=(10, 6))\nplt.plot(x, y, 'b-', linewidth=2, label='sin(x)')\nplt.title('Test Plot Generation')\nplt.xlabel('X axis')\nplt.ylabel('Y axis')\nplt.legend()\nplt.grid(True)\nplt.show()"
+    }
+    
+    # Create a temporary session for testing
+    session = ChatSession.objects.create(title="Test JSON Formatting")
+    formatted_html = format_json_response(test_json, session.id)
+    
+    return JsonResponse({
+        "reply": formatted_html,
+        "is_json_response": True
+    })
+
+@require_login
+def debug_connection_view(request):
+    """Debug view to test network connectivity from deployment"""
+    import socket
+    import requests
+    
+    debug_info = {
+        "server_info": {
+            "hostname": socket.gethostname(),
+            "local_ip": socket.gethostbyname(socket.gethostname())
+        },
+        "environment": {
+            "debug": settings.DEBUG,
+            "allowed_hosts": settings.ALLOWED_HOSTS,
+            "dify_url": settings.DIFY_API_URL
+        },
+        "network_tests": {}
+    }
+    
+    # Test external IP
+    try:
+        response = requests.get('https://httpbin.org/ip', timeout=10)
+        debug_info["network_tests"]["external_ip"] = response.json()
+    except Exception as e:
+        debug_info["network_tests"]["external_ip"] = {"error": str(e)}
+    
+    # Test Dify API connectivity
+    try:
+        response = requests.get(settings.DIFY_API_URL.replace('/chat-messages', ''), timeout=10)
+        debug_info["network_tests"]["dify_connectivity"] = {
+            "status_code": response.status_code,
+            "accessible": True
+        }
+    except Exception as e:
+        debug_info["network_tests"]["dify_connectivity"] = {"error": str(e), "accessible": False}
+    
+    return JsonResponse(debug_info, indent=2)
