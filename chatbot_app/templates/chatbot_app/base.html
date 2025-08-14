@@ -6,50 +6,53 @@
     <style>
         body {
             display: flex;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f7f9fb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #FDFDF8;
             margin: 0;
             min-height: 100vh;
         }
         
         .sidebar {
-            width: 320px;
-            background: #fff;
+            width: 260px;
+            background: #EFEEEC;
             height: 100vh;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-            border-right: 1px solid #e1e8ed;
+            border-right: 1px solid #C8C2B8;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
         
         .sidebar-header {
-            padding: 24px 20px 20px 20px;
-            border-bottom: 1px solid #e1e8ed;
-            background: #f8fafc;
+            padding: 16px;
+            border-bottom: 1px solid #C8C2B8;
+            background: #FDFDF8;
             flex-shrink: 0;
         }
         
         .sidebar-title {
-            font-size: 1.4rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #1a202c;
-            margin: 0 0 8px 0;
+            color: #140F0F;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .sidebar-subtitle {
-            font-size: 0.9rem;
-            color: #718096;
+            font-size: 0.8rem;
+            color: #524A43;
             margin: 0;
         }
         
         .sidebar-nav {
-            padding: 20px;
+            padding: 12px;
             flex: 1;
             overflow: hidden;
             min-height: 0;
             display: flex;
             flex-direction: column;
+            background: #EFEEEC;
         }
         
         .nav-section-scrollable {
@@ -79,148 +82,163 @@
         }
         
         .nav-section {
-            margin-bottom: 8px;
+            margin-bottom: 16px;
         }
         
         .nav-section-title {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            color: #718096;
+            color: #524A43;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            padding: 0 8px;
         }
         
         .nav-item {
             display: block;
-            padding: 12px 16px;
-            margin-bottom: 8px;
+            padding: 8px;
+            margin-bottom: 1px;
             text-decoration: none;
-            color: #4a5568;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            font-size: 0.95rem;
-            font-weight: 500;
+            color: #2B1F1E;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+            font-size: 0.85rem;
+            font-weight: 400;
         }
         
         .nav-item:hover {
-            background: #f7fafc;
-            color: #2d3748;
+            background: #EFEEEC;
+            color: #2B1F1E;
         }
         
         .nav-item.active {
-            background: #ebf8ff;
-            color: #3182ce;
-            border-left: 3px solid #3182ce;
+            background: #140F0F;
+            color: #FDFDF8;
         }
         
         .nav-item.faq {
-            background: #f0fff4;
-            color: #38a169;
+            background: transparent;
+            color: #2B1F1E;
         }
         
         .nav-item.faq:hover {
-            background: #e6fffa;
+            background: #EFEEEC;
         }
         
         .nav-item.dashboard {
-            background: #fffaf0;
-            color: #d69e2e;
+            background: #140F0F;
+            color: #FDFDF8;
+            text-align: center;
+            margin: 8px 0 8px 0;
+            font-weight: 500;
         }
         
         .nav-item.dashboard:hover {
-            background: #fff5f0;
+            background: #140F0F;
+            color: #FDFDF8;
         }
         
         .divider {
             height: 1px;
-            background: #e2e8f0;
+            background: #C8C2B8;
             margin: 8px 0;
         }
-        
 
-        
         .session-title {
-            font-weight: 500;
+            font-weight: 400;
             margin-bottom: 2px;
             line-height: 1.3;
+            font-size: 0.8rem;
         }
         
         .session-date {
-            font-size: 0.75rem;
-            color: #a0aec0;
+            font-size: 0.65rem;
+            color: #524A43;
         }
         
         .new-session-btn {
-            display: block;
-            padding: 8px 12px;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            text-align: center;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        
-        .new-session-btn:hover {
-            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-        }
-        
-        .session-item-container {
             display: flex;
             align-items: center;
-            margin-bottom: 4px;
-        }
-        
-        .session-item {
-            flex: 1;
-            display: block;
-            padding: 8px 12px;
-            text-decoration: none;
-            color: #4a5568;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            font-size: 0.85rem;
-            border: 1px solid transparent;
-        }
-        
-        .session-item:hover {
-            background: #f7fafc;
-            color: #2d3748;
-            border-color: #e2e8f0;
-        }
-        
-        .session-item.active {
-            background: #ebf8ff;
-            color: #3182ce;
-            border-color: #3182ce;
-        }
-        
-        .delete-session-btn {
-            display: none;
-            padding: 6px 8px;
-            background: #fed7d7;
-            color: #c53030;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px;
+            margin-bottom: 12px;
+            background: #FF4646;
+            color: #FDFDF8;
             border: none;
             border-radius: 4px;
             text-decoration: none;
             font-size: 0.8rem;
             font-weight: 500;
-            margin-left: 8px;
-            transition: all 0.2s ease;
-            cursor: pointer;
+            transition: all 0.15s ease;
         }
         
-        .delete-session-btn:hover {
-            background: #feb2b2;
+        .new-session-btn:hover {
+            background: #E63946;
+            transform: none;
         }
         
-        .session-item-container:hover .delete-session-btn {
+        .session-item-container {
+            margin-bottom: 1px;
+            position: relative;
+        }
+        
+        .session-item {
             display: block;
+            padding: 6px 8px;
+            text-decoration: none;
+            color: #2B1F1E;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+            font-size: 0.8rem;
+            border: none;
+            background: transparent;
+        }
+        
+        .session-item:hover {
+            background: #C8C2B8;
+            color: #2B1F1E;
+        }
+        
+        .session-item.active {
+            background: #140F0F;
+            color: #FDFDF8;
+        }
+        
+        .session-actions {
+            display: none;
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #FDFDF8;
+            border-radius: 4px;
+            padding: 2px;
+            box-shadow: 0 2px 4px rgba(20,15,15,0.1);
+            border: 1px solid #C8C2B8;
+        }
+        
+        .session-item-container:hover .session-actions {
+            display: block;
+        }
+        
+        .session-action-btn {
+            display: inline-block;
+            padding: 2px 4px;
+            margin: 0 1px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.6rem;
+            color: #2B1F1E;
+            transition: all 0.15s ease;
+            border-radius: 2px;
+        }
+        
+        .session-action-btn:hover {
+            background: #524A43;
+            color: #FDFDF8;
         }
         
         .main-content {
@@ -238,7 +256,7 @@
         .content-title {
             font-size: 1.8rem;
             font-weight: 600;
-            color: #2d3748;
+            color: #140F0F;
             margin: 0 0 24px 0;
             padding: 24px 24px 0 24px;
             flex-shrink: 0;
@@ -276,100 +294,56 @@
             transition: all 0.2s ease;
         }
         
-        .sidebar-logout-btn {
-            display: inline-block;
-            padding: 12px 16px;
-            margin: 0 10px 0 0;
-            background: #fed7d7;
-            color: #c53030;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-align: center;
-            transition: all 0.2s ease;
-            flex: 1;
-        }
-        
-        .sidebar-logout-btn:hover {
-            background: #feb2b2;
-        }
-        
-        .sidebar-settings-btn {
-            display: inline-block;
-            padding: 12px 16px;
-            margin: 0 0 0 10px;
-            background: #e6fffa;
-            color: #38a169;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-align: center;
-            transition: all 0.2s ease;
-            flex: 1;
-        }
-        
-        .sidebar-settings-btn:hover {
-            background: #b2f5ea;
-        }
-        
         .sidebar-bottom-buttons {
-            padding: 12px 20px;
+            padding: 8px 12px;
             display: flex;
             justify-content: flex-start;
             flex-shrink: 0;
-            border-top: 1px solid #e1e8ed;
-            background: #f8fafc;
+            border-top: 1px solid #C8C2B8;
+            background: #EFEEEC;
         }
         
         .settings-icon-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            background: #e2e8f0;
-            color: #4a5568;
+            padding: 4px 8px;
+            height: 24px;
+            background: #C8C2B8;
+            color: #2B1F1E;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             text-decoration: none;
-            font-size: 1rem;
-            transition: all 0.2s ease;
+            font-size: 0.7rem;
+            transition: all 0.15s ease;
             cursor: pointer;
         }
         
         .settings-icon-btn:hover {
-            background: #cbd5e0;
-            color: #2d3748;
-        }
-        
-        .logout-btn:hover {
-            background: #feb2b2;
+            background: #524A43;
+            color: #FDFDF8;
         }
         
         .empty-state {
             text-align: center;
-            padding: 20px 16px;
-            color: #718096;
+            padding: 16px 12px;
+            color: #524A43;
         }
         
         .empty-state-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
+            font-size: 1.5rem;
+            margin-bottom: 6px;
             opacity: 0.5;
         }
         
         .empty-state-text {
-            font-size: 0.9rem;
-            margin-bottom: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 2px;
         }
         
         .empty-state-subtext {
-            font-size: 0.8rem;
-            color: #a0aec0;
+            font-size: 0.7rem;
+            color: #524A43;
         }
     </style>
 </head>
@@ -386,7 +360,7 @@
             <!-- Dashboard -->
             <div class="nav-section">
                 <a href="{% url 'dashboard' %}" class="nav-item dashboard {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    📊 Dashboard
+                    Dashboard
                 </a>
             </div>
             
@@ -397,17 +371,19 @@
                 <!-- Chat Sessions -->
                 <div class="sidebar-half">
                     <div class="nav-section-title">Chat Sessions</div>
-                    <a href="{% url 'new_session' %}" class="new-session-btn">+ New Chat</a>
+                    <a href="{% url 'new_session' %}" class="new-session-btn">
+            New Chat
+        </a>
                     
                     <div class="sidebar-half-content">
                         {% for session in sessions %}
-                            <div class="session-item-container">
+                            <div class="session-item-container" data-session-id="{{ session.id }}">
                                 <a href="{% url 'chat_session' session.id %}" 
                                    class="session-item {% if current_session and current_session.id == session.id %}active{% endif %}">
                                     <div class="session-title">
                                         {% if session.title %}
-                                            {% if session.title|length > 25 %}
-                                                {{ session.title|slice:":25" }}...
+                                            {% if session.title|length > 18 %}
+                                                {{ session.title|slice:":18" }}...
                                             {% else %}
                                                 {{ session.title }}
                                             {% endif %}
@@ -417,16 +393,20 @@
                                     </div>
                                     <div class="session-date">{{ session.created_at|date:"M d, H:i" }}</div>
                                 </a>
-                                <a href="{% url 'delete_session' session.id %}" 
-                                   class="delete-session-btn" 
-                                   onclick="return confirm('Are you sure you want to delete this session?')"
-                                   title="Delete session">
-                                    🗑️
-                                </a>
+                                <div class="session-actions">
+                                    <button class="session-action-btn" onclick="renameSession({{ session.id }})" title="Rename">
+                                        Rename
+                                    </button>
+                                    <button class="session-action-btn" onclick="addToFAQSession({{ session.id }})" title="Add to FAQ">
+                                        FAQ
+                                    </button>
+                                    <button class="session-action-btn" onclick="deleteSession({{ session.id }})" title="Delete">
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
                         {% empty %}
                             <div class="empty-state">
-                                <div class="empty-state-icon">💬</div>
                                 <div class="empty-state-text">No chat sessions</div>
                                 <div class="empty-state-subtext">Start a new conversation</div>
                             </div>
@@ -443,26 +423,42 @@
                     <div class="sidebar-half-content">
                         {% if faq_sessions %}
                             {% for faq in faq_sessions %}
-                                <div class="session-item-container">
-                                    <a href="{% url 'chat_session' faq.id %}" class="session-item faq">
+                                <div class="session-item-container" data-faq-id="{{ faq.id }}">
+                                    <a href="{% url 'chat_session' faq.session_id %}" class="session-item faq {% if current_session and current_session.id == faq.session_id %}active{% endif %}">
                                         <div class="session-title">
-                                            {% if faq.preview %}
-                                                {% if faq.preview|length > 25 %}
-                                                    {{ faq.preview|slice:":25" }}...
+                                            {% if faq.title %}
+                                                {% if faq.title|length > 18 %}
+                                                    {{ faq.title|slice:":18" }}...
+                                                {% else %}
+                                                    {{ faq.title }}
+                                                {% endif %}
+                                            {% elif faq.preview %}
+                                                {% if faq.preview|length > 18 %}
+                                                    {{ faq.preview|slice:":18" }}...
                                                 {% else %}
                                                     {{ faq.preview }}
                                                 {% endif %}
                                             {% else %}
-                                                FAQ #{{ faq.id }}
+                                                FAQ #{{ faq.session_id }}
                                             {% endif %}
                                         </div>
                                         <div class="session-date">{{ faq.created_at|date:"M d, H:i" }}</div>
                                     </a>
+                                    <div class="session-actions">
+                                        <button class="session-action-btn" onclick="renameFAQSession({{ faq.id }})" title="Rename">
+                                            Rename
+                                        </button>
+                                        <button class="session-action-btn" onclick="removeFAQSession({{ faq.id }})" title="Remove from FAQ">
+                                            Remove
+                                        </button>
+                                        <button class="session-action-btn" onclick="deleteFAQSession({{ faq.id }})" title="Delete">
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             {% endfor %}
                         {% else %}
                             <div class="empty-state">
-                                <div class="empty-state-icon">📝</div>
                                 <div class="empty-state-text">No FAQ items</div>
                                 <div class="empty-state-subtext">Add conversations to FAQ</div>
                             </div>
@@ -475,7 +471,7 @@
         <!-- Settings button at bottom of sidebar -->
         <div class="sidebar-bottom-buttons">
             <a href="{% url 'settings' %}" class="settings-icon-btn" title="Settings">
-                ⚙️
+                Settings
             </a>
         </div>
     </div>
@@ -484,6 +480,7 @@
         <h1 class="content-title">{% block page_title %}Dashboard{% endblock %}</h1>
         
         <div class="content-body">
+            {% csrf_token %}
             {% block content %}{% endblock %}
         </div>
     </div>
@@ -499,18 +496,350 @@ document.addEventListener('DOMContentLoaded', function() {
         if (brandingSetting === 'false') {
             // Show simple "Chatbot" text
             sidebarHeader.innerHTML = `
-                <div class="sidebar-title" style="font-size: 1.4rem; font-weight: 600; color: #1a202c; margin: 0;">Chatbot</div>
+                <div class="sidebar-title">Chatbot</div>
             `;
         } else {
             // Show Lulu branding (default)
             sidebarHeader.innerHTML = `
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <img src="{% static 'Lululemon-Emblem-700x394.png' %}" alt="Lululemon Logo" style="width: 30px; height: 30px; margin-right: 16px; object-fit: cover; object-position: center;">
-                    <div class="sidebar-title" style="font-size: 1.4rem; line-height: 40px;">AI for Insights</div>
+                <div style="display: flex; align-items: center;">
+                    <img src="{% static 'Lululemon-Emblem-700x394.png' %}" alt="Lululemon Logo" style="width: 24px; height: 24px; margin-right: 8px; object-fit: cover;">
+                    <div class="sidebar-title">AI for Insights</div>
                 </div>
             `;
         }
     }
 });
+
+// Helper function to get CSRF token
+function getCSRFToken() {
+    // Try multiple ways to get the CSRF token
+    const tokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (tokenElement && tokenElement.value) {
+        return tokenElement.value;
+    }
+    
+    // Try to get from meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken && metaToken.getAttribute('content')) {
+        return metaToken.getAttribute('content');
+    }
+    
+    // Try to get from cookie
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    if (cookieValue) {
+        return cookieValue;
+    }
+    
+    console.error('CSRF token not found');
+    return '';
+}
+
+// Session action functions
+function renameSession(sessionId) {
+    // Find the session title element
+    const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
+    if (!sessionElement) return;
+    
+    const titleElement = sessionElement.querySelector('.session-title, .session-preview');
+    if (!titleElement) return;
+    
+    const currentTitle = titleElement.textContent.trim();
+    
+    // Create input element for in-place editing
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentTitle;
+    input.className = 'rename-input';
+    input.style.cssText = `
+        width: 100%;
+        padding: 4px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: inherit;
+        font-family: inherit;
+        background: white;
+        box-sizing: border-box;
+    `;
+    
+    // Replace title with input
+    titleElement.style.display = 'none';
+    titleElement.parentNode.insertBefore(input, titleElement.nextSibling);
+    input.focus();
+    input.select();
+    
+    function finishRename(save = true) {
+        const newTitle = input.value.trim();
+        
+        if (save && newTitle && newTitle !== currentTitle) {
+            // Save the new title
+            fetch(`/rename-session/${sessionId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({title: newTitle})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    titleElement.textContent = newTitle;
+                    titleElement.style.display = '';
+                    input.remove();
+                } else {
+                    alert('Failed to rename session: ' + (data.error || 'Unknown error'));
+                    titleElement.style.display = '';
+                    input.remove();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to rename session');
+                titleElement.style.display = '';
+                input.remove();
+            });
+        } else {
+            // Cancel rename
+            titleElement.style.display = '';
+            input.remove();
+        }
+    }
+    
+    // Handle enter key and escape key
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            finishRename(true);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            finishRename(false);
+        }
+    });
+    
+    // Handle blur (clicking outside)
+    input.addEventListener('blur', function() {
+        finishRename(true);
+    });
+}
+
+function deleteSession(sessionId) {
+    if (confirm('Are you sure you want to delete this session?')) {
+        fetch(`/delete-session/${sessionId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the session from the sidebar immediately
+                const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
+                if (sessionElement) {
+                    sessionElement.remove();
+                }
+                
+                // If we're currently viewing this session, redirect to dashboard
+                if (window.location.pathname.includes(`/sessions/${sessionId}/`)) {
+                    window.location.href = '/';
+                } else {
+                    // Just reload to refresh the sidebar
+                    location.reload();
+                }
+            } else {
+                alert('Failed to delete session: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Handle case where session might already be deleted
+            if (error.message && error.message.includes('404')) {
+                // Session already deleted, just remove from UI
+                const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
+                if (sessionElement) {
+                    sessionElement.remove();
+                }
+                if (window.location.pathname.includes(`/sessions/${sessionId}/`)) {
+                    window.location.href = '/';
+                }
+            } else {
+                alert('Failed to delete session');
+            }
+        });
+    }
+}
+
+function addToFAQSession(sessionId) {
+    fetch(`/add-session-to-faq/${sessionId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Session added to FAQ successfully!');
+            location.reload();
+        } else {
+            alert('Failed to add session to FAQ: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add session to FAQ');
+    });
+}
+
+function renameFAQSession(faqId) {
+    // Find the FAQ session title element
+    const faqElement = document.querySelector(`[data-faq-id="${faqId}"]`);
+    if (!faqElement) return;
+    
+    const titleElement = faqElement.querySelector('.session-title, .session-preview');
+    if (!titleElement) return;
+    
+    const currentTitle = titleElement.textContent.trim();
+    
+    // Create input element for in-place editing
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentTitle;
+    input.className = 'rename-input';
+    input.style.cssText = `
+        width: 100%;
+        padding: 4px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: inherit;
+        font-family: inherit;
+        background: white;
+        box-sizing: border-box;
+    `;
+    
+    // Replace title with input
+    titleElement.style.display = 'none';
+    titleElement.parentNode.insertBefore(input, titleElement.nextSibling);
+    input.focus();
+    input.select();
+    
+    function finishRename(save = true) {
+        const newTitle = input.value.trim();
+        
+        if (save && newTitle && newTitle !== currentTitle) {
+            // Save the new title
+            fetch(`/rename-faq-session/${faqId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({title: newTitle})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    titleElement.textContent = newTitle;
+                    titleElement.style.display = '';
+                    input.remove();
+                } else {
+                    alert('Failed to rename FAQ session: ' + (data.error || 'Unknown error'));
+                    titleElement.style.display = '';
+                    input.remove();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to rename FAQ session');
+                titleElement.style.display = '';
+                input.remove();
+            });
+        } else {
+            // Cancel rename
+            titleElement.style.display = '';
+            input.remove();
+        }
+    }
+    
+    // Handle enter key and escape key
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            finishRename(true);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            finishRename(false);
+        }
+    });
+    
+    // Handle blur (clicking outside)
+    input.addEventListener('blur', function() {
+        finishRename(true);
+    });
+}
+
+function deleteFAQSession(faqId) {
+    if (confirm('Are you sure you want to delete this FAQ session?')) {
+        fetch(`/delete-faq-session/${faqId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete FAQ session: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete FAQ session');
+        });
+    }
+}
+
+function removeFAQSession(faqId) {
+    if (confirm('Are you sure you want to remove this session from FAQ? It will be moved back to Chat Sessions.')) {
+        fetch(`/remove-faq-session/${faqId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the FAQ session from the sidebar immediately
+                const faqElement = document.querySelector(`[data-faq-id="${faqId}"]`);
+                if (faqElement) {
+                    faqElement.remove();
+                }
+                
+                // Show success message
+                alert('Session removed from FAQ and moved back to Chat Sessions!');
+                
+                // Reload to refresh both sidebars and show the session in Chat Sessions
+                location.reload();
+            } else {
+                alert('Failed to remove session from FAQ: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to remove session from FAQ');
+        });
+    }
+}
 </script>
 </html>

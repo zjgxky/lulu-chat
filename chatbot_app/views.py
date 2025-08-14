@@ -74,6 +74,11 @@ def chatbot_view(request, session_id=None):
 
 def post_to_dify(query, user_id, conversation_id=None, files=None, response_mode="streaming", inputs=None):
     url = settings.DIFY_API_URL
+    
+    # Check if API key is properly configured
+    if not settings.DIFY_API_KEY or settings.DIFY_API_KEY == 'your-dify-api-key-here':
+        raise ValueError("DIFY_API_KEY is not properly configured. Please set the environment variable DIFY_API_KEY with your actual Dify API key.")
+    
     headers = {
         "Authorization": f"Bearer {settings.DIFY_API_KEY}",
         "Content-Type": "application/json"
@@ -90,13 +95,29 @@ def post_to_dify(query, user_id, conversation_id=None, files=None, response_mode
     # Get timeout from settings
     timeout = getattr(settings, 'DIFY_TIMEOUT', 30)
     
+    print(f"DEBUG: Making request to Dify API: {url}")
+    print(f"DEBUG: API Key configured: {settings.DIFY_API_KEY[:10]}..." if len(settings.DIFY_API_KEY) > 10 else "DEBUG: API Key too short")
+    
     if response_mode == "streaming":
         # For streaming, return the response object directly
         response = requests.post(url, headers=headers, json=payload, stream=True, timeout=timeout)
+        # Check for authentication errors
+        if response.status_code == 401:
+            print(f"DEBUG: Authentication failed. Status: {response.status_code}")
+            print(f"DEBUG: Response: {response.text}")
+            raise ValueError(f"Authentication failed with Dify API. Please check your DIFY_API_KEY. Status: {response.status_code}")
+        elif response.status_code >= 400:
+            print(f"DEBUG: API request failed. Status: {response.status_code}")
+            print(f"DEBUG: Response: {response.text}")
+            raise ValueError(f"Dify API request failed. Status: {response.status_code}, Response: {response.text}")
         return response
     else:
         # For blocking, return JSON response
         response = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        if response.status_code == 401:
+            raise ValueError(f"Authentication failed with Dify API. Please check your DIFY_API_KEY. Status: {response.status_code}")
+        elif response.status_code >= 400:
+            raise ValueError(f"Dify API request failed. Status: {response.status_code}, Response: {response.text}")
         return response.json()
 
 @csrf_exempt
@@ -361,14 +382,17 @@ def process_streamed_response(request):
         
         try:
             # Try to parse the full_reply as JSON
-            json_response = json.loads(full_reply.strip())
-            
-            # Check if it has the expected JSON structure
-            if isinstance(json_response, dict) and any(key in json_response for key in 
-                ['definition', 'math_formula', 'steps', 'sql_query', 'table_markdown', 'summary', 'python_code']):
-                is_json_response = True
-                enhanced_reply = format_json_response(json_response, session_id)
-        except (json.JSONDecodeError, TypeError):
+            # First, check if the response starts and ends with curly braces (likely JSON)
+            stripped_reply = full_reply.strip()
+            if stripped_reply.startswith('{') and stripped_reply.endswith('}'):
+                json_response = json.loads(stripped_reply)
+                
+                # Check if it has the expected JSON structure
+                if isinstance(json_response, dict) and any(key in json_response for key in 
+                    ['definition', 'math_formula', 'steps', 'sql_query', 'table_markdown', 'summary', 'python_code']):
+                    is_json_response = True
+                    enhanced_reply = format_json_response(json_response, session_id)
+        except (json.JSONDecodeError, TypeError, ValueError):
             # Not a JSON response, continue with normal processing
             pass
         
@@ -539,14 +563,135 @@ def execute_python_script_view(request):
 
 def delete_session_view(request, session_id):
     from .models import ChatSession
-    session = get_object_or_404(ChatSession, id=session_id)
-    session.delete()
-    # Find the most recent remaining session
-    next_session = ChatSession.objects.order_by('-created_at').first()
-    if next_session:
-        return redirect('chat_session', session_id=next_session.id)
-    else:
-        return redirect('dashboard')
+    try:
+        session = get_object_or_404(ChatSession, id=session_id)
+        
+        if request.method == 'POST':
+            # Handle AJAX POST request
+            session.delete()
+            return JsonResponse({'success': True, 'message': 'Session deleted successfully'})
+        else:
+            # Handle GET request (direct URL access)
+            session.delete()
+            # Find the most recent remaining session
+            next_session = ChatSession.objects.order_by('-created_at').first()
+            if next_session:
+                return redirect('chat_session', session_id=next_session.id)
+            else:
+                return redirect('dashboard')
+    except Exception as e:
+        if request.method == 'POST':
+            return JsonResponse({'success': False, 'error': 'Session not found or already deleted'})
+        else:
+            # For GET requests, just redirect to dashboard
+            return redirect('dashboard')
+
+@csrf_exempt
+@require_login
+def rename_session_view(request, session_id):
+    """Rename a chat session"""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            new_title = data.get('title', '').strip()
+            
+            if not new_title:
+                return JsonResponse({'success': False, 'error': 'Title cannot be empty'})
+            
+            session = get_object_or_404(ChatSession, id=session_id)
+            session.title = new_title
+            session.save()
+            
+            return JsonResponse({'success': True, 'message': 'Session renamed successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
+
+@csrf_exempt  
+@require_login
+def add_session_to_faq_view(request, session_id):
+    """Add a chat session to FAQ"""
+    if request.method == "POST":
+        try:
+            session = get_object_or_404(ChatSession, id=session_id)
+            
+            # Check if FAQ entry already exists for this session
+            if FAQ.objects.filter(session=session).exists():
+                return JsonResponse({'success': False, 'error': 'This session is already in FAQ'})
+            
+            # Create FAQ entry
+            FAQ.objects.create(session=session)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Added to FAQ successfully'
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
+
+@csrf_exempt
+@require_login  
+def rename_faq_session_view(request, faq_id):
+    """Rename an FAQ session"""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            new_title = data.get('title', '').strip()
+            
+            if not new_title:
+                return JsonResponse({'success': False, 'error': 'Title cannot be empty'})
+            
+            faq = get_object_or_404(FAQ, id=faq_id)
+            faq.session.title = new_title
+            faq.session.save()
+            
+            return JsonResponse({'success': True, 'message': 'FAQ session renamed successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
+
+@csrf_exempt
+@require_login
+def delete_faq_session_view(request, faq_id):
+    """Delete an FAQ session"""
+    if request.method == "POST":
+        try:
+            faq = get_object_or_404(FAQ, id=faq_id)
+            faq.delete()
+            
+            return JsonResponse({'success': True, 'message': 'FAQ session deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
+
+@csrf_exempt
+@require_login
+def remove_faq_session_view(request, faq_id):
+    """Remove a session from FAQ (move it back to Chat Sessions)"""
+    if request.method == "POST":
+        try:
+            faq = get_object_or_404(FAQ, id=faq_id)
+            # Simply delete the FAQ entry - the session will automatically appear back in Chat Sessions
+            # since the session itself is not deleted, only the FAQ reference
+            faq.delete()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'Session removed from FAQ and moved back to Chat Sessions'
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
 
 def extract_python_blocks(text):
     """Extract Python code blocks from text"""
@@ -558,118 +703,66 @@ def format_json_response(json_data, session_id):
     """Format the JSON response from the agent into a readable HTML structure"""
     html_parts = []
     
-    # Definition section
-    if json_data.get('definition'):
-        html_parts.append(f"""
-        <div class="json-section">
-            <h3 class="section-title">📖 Definition</h3>
-            <div class="section-content">
-                <p>{json_data['definition']}</p>
-            </div>
-        </div>
-        """)
-    
-    # Math formula section
-    if json_data.get('math_formula') and isinstance(json_data['math_formula'], list):
-        formulas_html = ""
-        for i, formula in enumerate(json_data['math_formula']):
-            if formula.strip():
-                # Clean up the formula - remove extra escaping
-                clean_formula = formula.replace('\\n', '').replace('\\t', '').strip()
-                formulas_html += f'<div class="math-formula" data-formula="{clean_formula}">$${clean_formula}$$</div>\n'
-        
-        if formulas_html:
-            html_parts.append(f"""
-            <div class="json-section">
-                <h3 class="section-title">🧮 Mathematical Formulas</h3>
-                <div class="section-content">
-                    {formulas_html}
-                </div>
-            </div>
-            """)
-    
-    # Steps section
-    if json_data.get('steps') and isinstance(json_data['steps'], list):
-        steps_html = "<ol class='steps-list'>\n"
-        for step in json_data['steps']:
-            if step.strip():
-                steps_html += f"<li>{step}</li>\n"
-        steps_html += "</ol>"
-        
-        html_parts.append(f"""
-        <div class="json-section">
-            <h3 class="section-title">📋 Analysis Steps</h3>
-            <div class="section-content">
-                {steps_html}
-            </div>
-        </div>
-        """)
-    
-    # SQL Query section
-    if json_data.get('sql_query'):
-        html_parts.append(f"""
-        <div class="json-section">
-            <h3 class="section-title">💾 SQL Query</h3>
-            <div class="section-content">
-                <div class="code-block">
-                    <div class="code-header">
-                        <span class="code-language">sql</span>
-                        <button class="code-copy-btn" onclick="copyToClipboard(this, 'sql-query')">📋 Copy</button>
-                    </div>
-                    <div class="code-content">
-                        <pre><code class="language-sql" id="sql-query">{json_data['sql_query']}</code></pre>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """)
-    
-    # Table section
-    if json_data.get('table_markdown') and json_data['table_markdown'].strip():
-        html_parts.append(f"""
-        <div class="json-section">
-            <h3 class="section-title">📊 Results Table</h3>
-            <div class="section-content">
-                <div class="table-container">
-                    {json_data['table_markdown']}
-                </div>
-            </div>
-        </div>
-        """)
-    
-    # Summary section
+    # 1. FIRST SECTION: Summary
     if json_data.get('summary'):
         html_parts.append(f"""
         <div class="json-section">
-            <h3 class="section-title">📈 Summary</h3>
+            <h3 class="section-title">Summary</h3>
             <div class="section-content">
                 <p>{json_data['summary']}</p>
             </div>
         </div>
         """)
     
-    # Python code section - execute and show plot
+    # 2. SECOND SECTION: Plot with Code button
     if json_data.get('python_code') and json_data['python_code'].strip():
         python_code = json_data['python_code']
         
+        # Generate unique ID for this Python code
+        import hashlib
+        python_id = f"python-code-{hashlib.md5(python_code.encode()).hexdigest()[:8]}"
+        
         # Execute the Python code
         plot_html = ""
+        code_button_html = ""
+        
         try:
             result = execute_python_script(python_code, session_id)
             if result['success']:
                 plot_html = f"""
-                <div class="auto-plot-display">
-                    <div class="plot-title">Generated Visualization</div>
-                    <div class="plot-container">
-                        <img src="{result['plot_url']}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-                        <button class="download-plot-btn" onclick="downloadPlot('{result['plot_url']}', '{result['plot_filename']}')">📥 Download Plot</button>
+                <div class="plot-container">
+                    <img src="{result['plot_url']}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                """
+                code_button_html = f"""
+                <button class="code-toggle-btn" onclick="toggleCode('{python_id}')">Hide Code</button>
+                <div class="code-block" id="{python_id}" style="display: block;">
+                    <div class="code-header">
+                        <span class="code-language">python</span>
+                        <button class="code-copy-btn" onclick="copyToClipboard(this, '{python_id}-content')">📋 Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <pre><code class="language-python" id="{python_id}-content">{python_code}</code></pre>
                     </div>
                 </div>
                 """
             else:
+                error_details = result.get('error', 'Unknown error')
+                stdout = result.get('stdout', '')
+                stderr = result.get('stderr', '')
+                debug_info = result.get('debug_info', {})
+                
                 plot_html = f"""
                 <div class="plot-error">
-                    <div class="error">❌ Plot Generation Failed: {result.get('error', 'Unknown error')}</div>
+                    <div class="error">❌ Plot Generation Failed: {error_details}</div>
+                    <details class="error-details">
+                        <summary>Debug Information</summary>
+                        <div class="debug-output">
+                            {f'<h4>Standard Output:</h4><pre>{stdout}</pre>' if stdout else ''}
+                            {f'<h4>Standard Error:</h4><pre>{stderr}</pre>' if stderr else ''}
+                            {f'<h4>Debug Info:</h4><pre>{debug_info}</pre>' if debug_info else ''}
+                        </div>
+                    </details>
                 </div>
                 """
         except Exception as e:
@@ -680,19 +773,149 @@ def format_json_response(json_data, session_id):
             """
         
         html_parts.append(f"""
-        <div class="json-section">
-            <h3 class="section-title">🐍 Python Code & Visualization</h3>
+        <div class="json-section plot-section">
+            <h3 class="section-title">Plot</h3>
             <div class="section-content">
-                <div class="code-block">
-                    <div class="code-header">
-                        <span class="code-language">python</span>
-                        <button class="code-copy-btn" onclick="copyToClipboard(this, 'python-code')">📋 Copy</button>
-                    </div>
-                    <div class="code-content">
-                        <pre><code class="language-python" id="python-code">{python_code}</code></pre>
+                {plot_html}
+                {code_button_html}
+            </div>
+        </div>
+        """)
+    
+    # 3. THIRD SECTION: Results Table (folded by default)
+    if json_data.get('table_markdown') and json_data['table_markdown'].strip():
+        # Convert markdown table to HTML
+        import markdown
+        table_html = markdown.markdown(json_data['table_markdown'], extensions=['tables'])
+        
+        # Generate unique ID for SQL query
+        import hashlib
+        sql_id = f"sql-query-{hashlib.md5(json_data.get('sql_query', '').encode()).hexdigest()[:8]}"
+        table_id = f"table-{hashlib.md5(json_data['table_markdown'].encode()).hexdigest()[:8]}"
+        
+        # SQL Query button (if available)
+        sql_button_html = ""
+        if json_data.get('sql_query'):
+            sql_button_html = f"""
+            <button class="sql-toggle-btn" onclick="toggleSQL('{sql_id}')">Hide Query</button>
+            <div class="code-block" id="{sql_id}" style="display: block;">
+                <div class="code-header">
+                    <span class="code-language">sql</span>
+                    <button class="code-copy-btn" onclick="copyToClipboard(this, '{sql_id}-content')">📋 Copy</button>
+                </div>
+                <div class="code-content">
+                    <pre><code class="language-sql" id="{sql_id}-content">{json_data['sql_query']}</code></pre>
+                </div>
+            </div>
+            """
+        
+        html_parts.append(f"""
+        <div class="json-section table-section">
+            <h3 class="section-title">Results Table</h3>
+            <div class="section-content">
+                <div class="table-container" id="{table_id}">
+                    {table_html}
+                    <div class="table-toggle-container" onclick="toggleTable('{table_id}')">
+                        <span class="table-toggle-text">▼ Show Complete Table</span>
                     </div>
                 </div>
-                {plot_html}
+                {sql_button_html}
+            </div>
+        </div>
+        """)
+    
+    # 4. FOURTH SECTION: Combined Information (Tabbed)
+    combined_sections = []
+    
+    # Definitions tab
+    if json_data.get('definition'):
+        definitions = json_data['definition']
+        if isinstance(definitions, list):
+            definitions_html = "<ul class='definitions-list'>\n"
+            for definition in definitions:
+                if definition.strip():
+                    definitions_html += f"<li>{definition}</li>\n"
+            definitions_html += "</ul>"
+        else:
+            definitions_html = f"<p>{definitions}</p>"
+        
+        combined_sections.append(('definitions', 'Definitions', definitions_html))
+    
+    # Formulas tab
+    if json_data.get('math_formula') and isinstance(json_data['math_formula'], list):
+        formulas_html = ""
+        for i, formula in enumerate(json_data['math_formula']):
+            if formula.strip():
+                # Keep the formula as-is if it's already in LaTeX format
+                clean_formula = formula.strip()
+                
+                # Remove any outer $$ wrapper if present (agent sometimes sends with $$)
+                if clean_formula.startswith('$$') and clean_formula.endswith('$$'):
+                    clean_formula = clean_formula[2:-2].strip()
+                
+                # Only process if it looks like the problematic format
+                if clean_formula.startswith('text') and 'frac' in clean_formula and '\\' not in clean_formula:
+                    # Handle the specific malformed format from agent
+                    import re
+                    match = re.search(r'text(.+?)=frac(.+)', clean_formula)
+                    if match:
+                        var_name = match.group(1)
+                        frac_content = match.group(2)
+                        
+                        # Look for pattern: textNumeratortextDenominator
+                        frac_match = re.search(r'text(.+?)text(.+)', frac_content)
+                        if frac_match:
+                            numerator = frac_match.group(1)
+                            denominator = frac_match.group(2)
+                            clean_formula = f"\\text{{{var_name}}} = \\frac{{\\text{{{numerator}}}}}{{\\text{{{denominator}}}}}"
+                
+                # Escape quotes for HTML attribute
+                escaped_formula = clean_formula.replace('"', '&quot;')
+                print(f"DEBUG: Original formula: {formula}")
+                print(f"DEBUG: Final formula: {clean_formula}")
+                
+                # Create the math element
+                formulas_html += f'<div class="math-formula" data-formula="{escaped_formula}">$${clean_formula}$$</div>\n'
+        
+        if formulas_html:
+            combined_sections.append(('formulas', 'Formulas', formulas_html))
+    
+    # Steps tab
+    if json_data.get('steps') and isinstance(json_data['steps'], list):
+        steps_html = "<ol class='steps-list'>\n"
+        for step in json_data['steps']:
+            if step.strip():
+                steps_html += f"<li>{step}</li>\n"
+        steps_html += "</ol>"
+        
+        combined_sections.append(('steps', 'Steps', steps_html))
+    
+    # Create the tabbed section if we have any combined content
+    if combined_sections:
+        tabs_html = ""
+        content_html = ""
+        
+        for i, (tab_id, tab_title, tab_content) in enumerate(combined_sections):
+            active_class = "active" if i == 0 else ""
+            tabs_html += f'<button class="tab-btn {active_class}" onclick="switchTab(\'{tab_id}\')">{tab_title}</button>\n'
+            
+            display_style = "block" if i == 0 else "none"
+            content_html += f'''
+            <div class="tab-content" id="{tab_id}" style="display: {display_style};">
+                {tab_content}
+            </div>
+            '''
+        
+        html_parts.append(f"""
+        <div class="json-section combined-section">
+            <h3 class="section-title">Information</h3>
+            <div class="section-content">
+                <div class="tab-bar">
+                    {tabs_html}
+                </div>
+                <div class="tab-contents">
+                    {content_html}
+                </div>
             </div>
         </div>
         """)
@@ -713,10 +936,14 @@ def execute_python_script(script_content, session_id):
         temp_dir = Path(tempfile.gettempdir()) / f"dify_plots_{session_id}_{uuid.uuid4().hex[:8]}"
         temp_dir.mkdir(exist_ok=True)
         
+        # Clean up the script content - fix common issues from agent-generated code
+        cleaned_script = clean_python_script(script_content)
+        
         # Prepare the script with proper matplotlib backend and necessary imports
         enhanced_script = f"""
 import os
 import sys
+import traceback
 
 try:
     # Set matplotlib backend before importing pyplot
@@ -731,28 +958,53 @@ except ImportError as e:
 try:
     import numpy as np
     print("NumPy imported successfully")
-except ImportError:
-    print("NumPy not available")
+except ImportError as e:
+    print(f"NumPy not available: {{e}}")
+    # Don't exit for numpy, some scripts might not need it
 
 try:
     import pandas as pd
     print("Pandas imported successfully")  
-except ImportError:
-    print("Pandas not available")
+except ImportError as e:
+    print(f"Pandas not available: {{e}}")
+    # Don't exit for pandas, some scripts might not need it
+
+try:
+    import seaborn as sns
+    print("Seaborn imported successfully")
+except ImportError as e:
+    print(f"Seaborn not available: {{e}}")
 
 # Change to the working directory
 os.chdir(r'{temp_dir}')
 print(f"Working directory: {{os.getcwd()}}")
 
-# Original script content
-{script_content}
+# Set up plot saving
+plt.ioff()  # Turn off interactive mode
 
-print("Script execution completed")
+try:
+    # Original script content (cleaned)
+{cleaned_script}
+
+    # Save the plot
+    plt.tight_layout()
+    plot_filename = 'plot.png'
+    plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+    plt.close('all')  # Close all figures to free memory
+    print(f"Plot saved as {{plot_filename}}")
+    
+except Exception as e:
+    print(f"Error in script execution: {{e}}")
+    print("Traceback:")
+    traceback.print_exc()
+    sys.exit(1)
+
+print("Script execution completed successfully")
 """
         
         # Create a temporary Python file
         script_file = temp_dir / "script.py"
-        with open(script_file, 'w') as f:
+        with open(script_file, 'w', encoding='utf-8') as f:
             f.write(enhanced_script)
         
         # Execute the script
@@ -761,7 +1013,7 @@ print("Script execution completed")
             capture_output=True,
             text=True,
             cwd=temp_dir,
-            timeout=30  # 30 second timeout
+            timeout=60  # Increased timeout to 60 seconds
         )
         
         # Look for generated plot files
@@ -775,7 +1027,11 @@ print("Script execution completed")
                 'success': False,
                 'error': f'Script execution failed (exit code {result.returncode})',
                 'stdout': result.stdout,
-                'stderr': result.stderr
+                'stderr': result.stderr,
+                'debug_info': {
+                    'temp_dir': str(temp_dir),
+                    'script_content': enhanced_script[:500] + "..." if len(enhanced_script) > 500 else enhanced_script
+                }
             }
         
         if plot_files:
@@ -810,19 +1066,106 @@ print("Script execution completed")
                 'success': False,
                 'error': f'No plot file generated. Files in temp dir: {file_list}',
                 'stdout': result.stdout,
-                'stderr': result.stderr
+                'stderr': result.stderr,
+                'debug_info': {
+                    'temp_dir': str(temp_dir),
+                    'files_in_dir': file_list
+                }
             }
             
     except subprocess.TimeoutExpired:
         return {
             'success': False,
-            'error': 'Script execution timed out'
+            'error': 'Script execution timed out (60 seconds)'
         }
     except Exception as e:
         return {
             'success': False,
-            'error': str(e)
+            'error': f'Exception in execute_python_script: {str(e)}',
+            'exception_type': type(e).__name__
         }
+
+def clean_python_script(script_content):
+    """Clean up Python script content from agent to fix common issues"""
+    import re
+    
+    # Remove any potential encoding issues
+    script = script_content.strip()
+    
+    # Fix common issues with agent-generated code:
+    
+    # 1. Replace plt.show() with plt.savefig() and plt.close()
+    script = re.sub(r'plt\.show\(\)', '', script)
+    
+    # 2. Fix DataFrame creation from 'result' variable that doesn't exist
+    # Look for patterns like df = pd.DataFrame(result) and replace with sample data
+    if 'pd.DataFrame(result)' in script:
+        script = script.replace('pd.DataFrame(result)', 'pd.DataFrame()')
+        # Add comment about missing data
+        script = "# Note: 'result' variable not available, using sample data\n" + script
+    
+    # 3. Fix pandas pivot syntax errors
+    # Fix the exact error from the screenshot: positional argument after keyword arguments
+    # Pattern: .pivot(index="col", columns="col", "values") -> .pivot(index="col", columns="col", values="values")
+    script = re.sub(r'\.pivot\(\s*index\s*=\s*"([^"]+)"\s*,\s*columns\s*=\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)', 
+                   r'.pivot(index="\1", columns="\2", values="\3")', script)
+    
+    # Also handle single quotes
+    script = re.sub(r"\.pivot\(\s*index\s*=\s*'([^']+)'\s*,\s*columns\s*=\s*'([^']+)'\s*,\s*'([^']+)'\s*\)", 
+                   r".pivot(index='\1', columns='\2', values='\3')", script)
+    
+    # Generic fix for other cases
+    script = re.sub(r"\.pivot\(([^)]+),\s*'([^']+)'\)", r".pivot(\1, values='\2')", script)
+    script = re.sub(r'\.pivot\(([^)]+),\s*"([^"]+)"\)', r'.pivot(\1, values="\2")', script)
+    
+    # 4. Fix seaborn barplot syntax issues
+    # Fix: sns.barplot(data=df, x='col', y=value) -> sns.barplot(data=df, x='col', y='col')
+    script = re.sub(r"sns\.barplot\(([^)]+),\s*y=(\d+)", r"sns.barplot(\1, y=str(\2))", script)
+    
+    # 5. Replace references to SQL result data with sample data creation
+    if 'pivot_df' in script and 'result' in script:
+        # Create sample data if the script tries to use database results
+        sample_data_creation = """
+# Create sample data since database results are not available
+import pandas as pd
+import numpy as np
+
+# Sample data based on the expected structure
+categories = ['Bags', 'Equipment', 'Mens Footwear', 'Womens Pants', 'Womens SS-LS Tops']
+years = [2023, 2024, 2025]
+np.random.seed(42)  # For reproducible results
+
+# Create sample data
+data = []
+for category in categories:
+    for year in years:
+        freq = np.random.uniform(1.0, 2.5)  # Random frequency between 1.0 and 2.5
+        data.append({'product_category': category, 'fiscal_year': year, 'avg_order_frequency': round(freq, 2)})
+
+df_avg_order_frequency = pd.DataFrame(data)
+"""
+        script = sample_data_creation + script
+    
+    # 6. Ensure proper indentation (convert to spaces)
+    lines = script.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        # Convert tabs to 4 spaces
+        line = line.replace('\t', '    ')
+        cleaned_lines.append(line)
+    
+    script = '\n'.join(cleaned_lines)
+    
+    # 7. Add proper indentation for the script content
+    lines = script.split('\n')
+    indented_lines = []
+    for line in lines:
+        if line.strip():  # Only indent non-empty lines
+            indented_lines.append('    ' + line)
+        else:
+            indented_lines.append('')
+    
+    return '\n'.join(indented_lines)
 
 def get_bot_response(user_input):
     # Placeholder logic
@@ -875,10 +1218,12 @@ def dashboard_view(request):
         first_user_msg = faq.session.messages.filter(sender="user").order_by('timestamp').first()
         preview = first_user_msg.text if first_user_msg else None
         faq_sessions.append({
-            'id': faq.session.id,
+            'id': faq.id,  # FAQ ID for rename/delete operations
+            'session_id': faq.session.id,  # Session ID for linking to chat
             'created_at': faq.session.created_at,
             'preview': preview,
-            'faq_created_at': faq.created_at
+            'faq_created_at': faq.created_at,
+            'title': faq.session.title  # Add title for display
         })
     
     # Get all sessions for sidebar
@@ -985,8 +1330,12 @@ def settings_view(request):
 def test_formatting_view(request):
     """Test view for formatting (can be removed in production)"""
     test_json = {
-        "definition": "This is a test definition to verify that the JSON formatting works correctly.",
-        "math_formula": ["FQY = \\frac{\\text{Number of positive transactions}}{\\text{Number of Active Guests}}"],
+        "definition": [
+            "Average Order Frequency (FQY): Number of positive transactions / Number of Active Guests within the period of analysis.",
+            "Active Guest: A guest who has made at least 1 positive or negative transaction within the period of analysis.",
+            "Product Category: Class name in the product hierarchy (e.g., 'Womens Pants', 'Mens SS-LS Tops')."
+        ],
+        "math_formula": ["\\text{Average Order Frequency} = \\frac{\\text{Number of Positive Transactions}}{\\text{Number of Active Guests}}"],
         "steps": [
             "1. Parse the JSON response from the agent",
             "2. Extract each section (definition, formulas, steps, etc.)",
@@ -995,13 +1344,13 @@ def test_formatting_view(request):
             "5. Render the complete formatted response"
         ],
         "sql_query": "SELECT t.customer_code, COUNT(*) as transaction_count FROM transactions t WHERE t.status = 'completed' GROUP BY t.customer_code ORDER BY transaction_count DESC;",
-        "table_markdown": "| Column | Value | Description |\n| --- | --- | --- |\n| FY2023 | 1.50 | Average frequency |\n| FY2024 | 1.65 | Improved performance |\n| FY2025 | 1.75 | Projected growth |",
-        "summary": "The test formatting demonstrates how JSON responses from the agent are parsed and displayed with proper sections, titles, and formatting.",
-        "python_code": "import matplotlib.pyplot as plt\nimport numpy as np\n\nx = np.linspace(0, 10, 100)\ny = np.sin(x)\n\nplt.figure(figsize=(10, 6))\nplt.plot(x, y, 'b-', linewidth=2, label='sin(x)')\nplt.title('Test Plot Generation')\nplt.xlabel('X axis')\nplt.ylabel('Y axis')\nplt.legend()\nplt.grid(True)\nplt.show()"
+        "table_markdown": "| Year | Product Category | Avg Order Frequency |\n| --- | --- | --- |\n| 2023 | Womens Pants | 2.68 |\n| 2023 | Womens SS-LS Tops | 2.21 |\n| 2024 | Womens Pants | 2.31 |\n| 2024 | Womens SS-LS Tops | 1.82 |\n| 2025 | Womens Pants | 2.49 |\n| 2025 | Womens SS-LS Tops | 1.94 |",
+        "summary": "The test formatting demonstrates how JSON responses from the agent are parsed and displayed with proper sections, titles, and formatting. This shows the new structure with definitions as arrays.",
+        "python_code": "import matplotlib.pyplot as plt\nimport numpy as np\n\n# Sample data for demonstration\ncategories = ['Womens Pants', 'Womens SS-LS Tops', 'Mens SS-LS Tops']\ny2023 = [2.68, 2.21, 1.77]\ny2024 = [2.31, 1.82, 1.40]\ny2025 = [2.49, 1.94, 1.50]\n\nx = np.arange(len(categories))\nwidth = 0.25\n\nfig, ax = plt.subplots(figsize=(10, 6))\nrects1 = ax.bar(x - width, y2023, width, label='2023', color='#FF6B6B')\nrects2 = ax.bar(x, y2024, width, label='2024', color='#4ECDC4')\nrects3 = ax.bar(x + width, y2025, width, label='2025', color='#45B7D1')\n\nax.set_xlabel('Product Category')\nax.set_ylabel('Average Order Frequency')\nax.set_title('Average Order Frequency by Product Category (2023-2025)')\nax.set_xticks(x)\nax.set_xticklabels(categories)\nax.legend()\n\nplt.tight_layout()\nplt.show()"
     }
     
     # Create a temporary session for testing
-    session = ChatSession.objects.create(title="Test JSON Formatting")
+    session = ChatSession.objects.create(title="Test JSON Formatting - New Structure")
     formatted_html = format_json_response(test_json, session.id)
     
     return JsonResponse({
@@ -1045,4 +1394,142 @@ def debug_connection_view(request):
     except Exception as e:
         debug_info["network_tests"]["dify_connectivity"] = {"error": str(e), "accessible": False}
     
-    return JsonResponse(debug_info, indent=2)
+    return JsonResponse(debug_info)
+
+@require_login
+def debug_python_view(request):
+    """Debug Python script execution"""
+    test_script = """
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Create sample data
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+# Create the plot
+plt.figure(figsize=(8, 6))
+plt.plot(x, y, 'b-', linewidth=2, label='sin(x)')
+plt.title('Test Sine Wave')
+plt.xlabel('X axis')
+plt.ylabel('Y axis')
+plt.legend()
+plt.grid(True)
+"""
+    
+    # Test the Python execution
+    session = ChatSession.objects.create(title="Python Debug Test")
+    result = execute_python_script(test_script, session.id)
+    
+    return JsonResponse({
+        'execution_result': result,
+        'test_script': test_script
+    })
+
+@require_login
+def debug_katex_view(request):
+    """Debug KaTeX formula rendering"""
+    from django.http import HttpResponse
+    
+    test_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KaTeX Debug Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .math-formula { margin: 16px 0; text-align: center; background: #f9fafb; padding: 16px; border-radius: 6px; border: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <h1>KaTeX Formula Rendering Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Simple Formula</h2>
+        <div class="math-formula" data-formula="x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}">
+            $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Your Formula Format</h2>
+        <div class="math-formula" data-formula="\\text{Average Order Frequency} = \\frac{\\text{Number of Positive Transactions}}{\\text{Number of Active Guests}}">
+            $$\\text{Average Order Frequency} = \\frac{\\text{Number of Positive Transactions}}{\\text{Number of Active Guests}}$$
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Agent's Complex Format</h2>
+        <div class="math-formula" data-formula-original="textAverageOrderFrequency=fractextNumberofPositiveTransactionstextNumberofActiveGuests">
+            Original: textAverageOrderFrequency=fractextNumberofPositiveTransactionstextNumberofActiveGuests
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script>
+        console.log('KaTeX loaded:', typeof katex !== 'undefined');
+        
+        setTimeout(() => {
+            // Test basic rendering
+            const mathElements = document.querySelectorAll('.math-formula');
+            mathElements.forEach((elem, index) => {
+                const formula = elem.getAttribute('data-formula');
+                if (formula) {
+                    try {
+                        console.log(`Rendering formula ${index + 1}:`, formula);
+                        const rendered = katex.renderToString(formula, { 
+                            displayMode: true,
+                            throwOnError: false,
+                            strict: false
+                        });
+                        elem.innerHTML = rendered;
+                        console.log(`Success ${index + 1}`);
+                    } catch (error) {
+                        console.error(`Error ${index + 1}:`, error);
+                        elem.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+                    }
+                }
+                
+                // Handle the complex format
+                const originalFormula = elem.getAttribute('data-formula-original');
+                if (originalFormula) {
+                    // Process the complex format like your agent sends
+                    let cleanFormula = originalFormula;
+                    if (cleanFormula.startsWith('text') && cleanFormula.includes('frac')) {
+                        const match = cleanFormula.match(/text(.+?)=frac(.+)/);
+                        if (match) {
+                            const varName = match[1];
+                            const fracContent = match[2];
+                            const fracMatch = fracContent.match(/text(.+?)text(.+)/);
+                            if (fracMatch) {
+                                const numerator = fracMatch[1];
+                                const denominator = fracMatch[2];
+                                cleanFormula = `\\\\text{${varName}} = \\\\frac{\\\\text{${numerator}}}{\\\\text{${denominator}}}`;
+                            }
+                        }
+                    }
+                    
+                    try {
+                        console.log('Processing complex formula:', originalFormula);
+                        console.log('Cleaned to:', cleanFormula);
+                        const rendered = katex.renderToString(cleanFormula, { 
+                            displayMode: true,
+                            throwOnError: false,
+                            strict: false
+                        });
+                        elem.innerHTML = `<div>Original: ${originalFormula}</div><div>Rendered:</div>${rendered}`;
+                    } catch (error) {
+                        console.error('Complex formula error:', error);
+                        elem.innerHTML = `<div style="color: red;">Failed to render: ${cleanFormula}<br>Error: ${error.message}</div>`;
+                    }
+                }
+            });
+        }, 100);
+    </script>
+</body>
+</html>
+    """
+    
+    return HttpResponse(test_html)

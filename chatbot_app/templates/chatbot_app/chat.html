@@ -12,9 +12,7 @@
     }
     
     .chat-container {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        background: #FDFDF8;
         height: 100vh;
         display: flex;
         flex-direction: column;
@@ -26,43 +24,48 @@
         flex: 1;
         overflow-y: auto;
         padding: 24px;
-        background: #f8fafc;
+        background: #FDFDF8;
     }
     
     .message {
         margin-bottom: 16px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: fit-content;
         word-break: break-word;
         position: relative;
+        display: inline-block;
     }
     
     .message-user {
-        background: #ebf8ff;
-        color: #2c5282;
+        background: #140F0F;
+        color: #FDFDF8;
         margin-left: auto;
         border-bottom-right-radius: 4px;
+        border: 1px solid #140F0F;
+        max-width: 70%;
     }
     
     .message-bot {
-        background: #f0fff4;
-        color: #22543d;
+        background: #EFEEEC;
+        color: #140F0F;
         margin-right: auto;
         border-bottom-left-radius: 4px;
+        border: 1px solid #C8C2B8;
+        max-width: 70%;
     }
     
     .user {
         font-weight: 600;
-        color: #3182ce;
-        font-size: 0.9rem;
+        color: #2B1F1E;
+        font-size: 0.85rem;
         margin-bottom: 4px;
     }
     
     .bot {
         font-weight: 600;
-        color: #38a169;
-        font-size: 0.9rem;
+        color: #2B1F1E;
+        font-size: 0.85rem;
         margin-bottom: 4px;
     }
     
@@ -73,9 +76,8 @@
     
     .chat-input-container {
         padding: 20px 24px;
-        background: #fff;
-        border-top: 1px solid #e2e8f0;
-        border-radius: 0 0 12px 12px;
+        background: #FDFDF8;
+        border-top: 1px solid #C8C2B8;
         margin-top: auto;
     }
     
@@ -88,36 +90,39 @@
     .chat-input {
         flex: 1;
         padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
+        border: 1px solid #C8C2B8;
+        border-radius: 6px;
         font-size: 0.95rem;
-        transition: border-color 0.2s ease;
+        transition: border-color 0.15s ease;
         outline: none;
+        background: #FDFDF8;
+        color: #140F0F;
     }
     
     .chat-input:focus {
-        border-color: #3182ce;
+        border-color: #140F0F;
+        box-shadow: 0 0 0 0.2rem rgba(20, 15, 15, 0.1);
     }
     
     .send-btn {
         padding: 12px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #fff;
+        background: #FF4646;
+        color: #FDFDF8;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
     }
     
     .send-btn:hover {
-        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-        transform: translateY(-1px);
+        background: #E63946;
+        transform: none;
     }
     
     .empty-msg {
         text-align: center;
-        color: #a0aec0;
+        color: #7F746C;
         padding: 40px 20px;
         font-style: italic;
     }
@@ -133,6 +138,16 @@
     
     .message-container {
         margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .message-container .message-user {
+        align-self: flex-end;
+    }
+    
+    .message-container .message-bot {
+        align-self: flex-start;
     }
     
     .feedback-buttons {
@@ -145,31 +160,31 @@
     
     .feedback-btn {
         background: none;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
+        border: 1px solid #7F746C;
+        border-radius: 4px;
         padding: 4px 8px;
         cursor: pointer;
         font-size: 14px;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
         opacity: 0.7;
         position: relative;
     }
     
     .feedback-btn:hover {
         opacity: 1;
-        transform: scale(1.05);
+        background: #EFEEEC;
     }
     
     .like-btn:hover {
-        background: #f0fff4;
-        border-color: #38a169;
-        color: #38a169;
+        background: #EFEEEC;
+        border-color: #140F0F;
+        color: #140F0F;
     }
     
     .dislike-btn:hover {
-        background: #fff5f5;
-        border-color: #e53e3e;
-        color: #e53e3e;
+        background: #EFEEEC;
+        border-color: #140F0F;
+        color: #140F0F;
     }
     
     .feedback-btn.active {
@@ -181,48 +196,49 @@
     }
     
     .faq-btn {
-        background: #38a169;
-        color: white;
+        background: #C8C2B8;
+        color: #140F0F;
         border: none;
         padding: 8px 12px;
-        border-radius: 6px;
+        border-radius: 4px;
         cursor: pointer;
         font-size: 0.85rem;
         font-weight: 500;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
         margin-left: 8px;
     }
     
     .faq-btn:hover {
-        background: #2f855a;
-        transform: translateY(-1px);
+        background: #140F0F;
+        color: #FDFDF8;
+        transform: none;
     }
     
     .faq-btn:active {
-        transform: translateY(0);
+        transform: none;
     }
     
     .like-btn.active {
-        background: #f0fff4;
-        border-color: #38a169;
-        color: #38a169;
+        background: #EFEEEC;
+        border-color: #140F0F;
+        color: #140F0F;
         font-weight: bold;
-        box-shadow: 0 2px 8px rgba(56, 161, 105, 0.2);
+        box-shadow: 0 2px 8px rgba(20, 15, 15, 0.2);
     }
     
     .dislike-btn.active {
-        background: #fff5f5;
-        border-color: #e53e3e;
-        color: #e53e3e;
+        background: #EFEEEC;
+        border-color: #140F0F;
+        color: #140F0F;
         font-weight: bold;
-        box-shadow: 0 2px 8px rgba(229, 62, 62, 0.2);
+        box-shadow: 0 2px 8px rgba(20, 15, 15, 0.2);
     }
     
     /* Markdown styles */
     .message-content h1, .message-content h2, .message-content h3, 
     .message-content h4, .message-content h5, .message-content h6 {
         margin: 16px 0 8px 0;
-        color: #2d3748;
+        color: #140F0F;
         font-weight: 600;
     }
     
@@ -478,6 +494,19 @@
         color: #4b5563;
     }
     
+    .definitions-list {
+        margin: 0;
+        padding-left: 20px;
+        list-style-type: disc;
+    }
+    
+    .definitions-list li {
+        margin: 12px 0;
+        line-height: 1.6;
+        color: #4b5563;
+        font-size: 0.95rem;
+    }
+    
     .math-formula {
         margin: 16px 0;
         text-align: center;
@@ -485,6 +514,16 @@
         padding: 16px;
         border-radius: 6px;
         border: 1px solid #e5e7eb;
+    }
+    
+    .formula-error {
+        color: #dc2626;
+        font-family: monospace;
+        font-size: 0.9rem;
+        background: #fef2f2;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #fecaca;
     }
     
     .table-container {
@@ -581,6 +620,192 @@
         border: 1px solid #fecaca;
         border-radius: 6px;
         color: #dc2626;
+    }
+    
+    .error-details {
+        margin-top: 12px;
+    }
+    
+    .error-details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: #b91c1c;
+        padding: 8px 0;
+    }
+    
+    .error-details summary:hover {
+        color: #dc2626;
+    }
+    
+    .debug-output {
+        margin-top: 8px;
+        padding: 12px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.85rem;
+    }
+    
+    .debug-output h4 {
+        margin: 0 0 8px 0;
+        color: #374151;
+        font-size: 0.9rem;
+    }
+    
+    .debug-output pre {
+        margin: 0;
+        background: #ffffff;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    /* NEW STYLES FOR RESTRUCTURED LAYOUT */
+    
+    /* Plot section specific styles */
+    .plot-section .section-content {
+        position: relative;
+    }
+    
+    .code-toggle-btn {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        background: #000000;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        z-index: 10;
+    }
+    
+    .code-toggle-btn:hover {
+        background: #333333;
+    }
+    
+    /* Table section specific styles */
+    .table-section .section-content {
+        position: relative;
+    }
+    
+    /* Table toggle container - like error divider style */
+    .table-toggle-container {
+        cursor: pointer;
+        margin: 8px 0 0 0;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    
+    .table-toggle-container:hover {
+        background: #f1f3f4;
+        border-color: #d1d5db;
+    }
+    
+    .table-toggle-text {
+        font-size: 13px;
+        color: #6b7280;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    
+    .table-toggle-container:hover .table-toggle-text {
+        color: #374151;
+    }
+    
+    .sql-toggle-btn {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        background: #000000;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        z-index: 10;
+    }
+    
+    .sql-toggle-btn:hover {
+        background: #333333;
+    }
+    
+    /* Tab bar styles for combined information section */
+    .tab-bar {
+        display: flex;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 20px;
+    }
+    
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        color: #6b7280;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+        margin-right: 8px;
+    }
+    
+    .tab-btn:hover {
+        color: #374151;
+        background: #f9fafb;
+    }
+    
+    .tab-btn.active {
+        color: #4f46e5;
+        border-bottom-color: #4f46e5;
+        background: #f8faff;
+    }
+    
+    .tab-contents {
+        min-height: 200px;
+    }
+    
+    .tab-content {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Remove margin from section titles to clean up spacing */
+    .json-section .section-title {
+        margin-top: 0;
+        margin-bottom: 16px;
+        color: #1f2937;
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    /* Ensure proper spacing between sections */
+    .json-section {
+        margin-bottom: 32px;
+    }
+    
+    .json-section:last-child {
+        margin-bottom: 0;
     }
     
     /* Python execution styles */
@@ -705,7 +930,11 @@
                     <div class="message message-{{ message.sender }}">
                         <div class="message-content">
                             {% if message.sender == 'bot' %}
-                                <div class="markdown-content" data-text="{{ message.text|escapejs }}" data-message-id="{{ message.id }}">{{ message.text|linebreaks }}</div>
+                                {% if 'json-section' in message.text or 'json-response-container' in message.text %}
+                                    <div class="json-response-container">{{ message.text|safe }}</div>
+                                {% else %}
+                                    <div class="markdown-content" data-text="{{ message.text|escapejs }}" data-message-id="{{ message.id }}">{{ message.text|linebreaks }}</div>
+                                {% endif %}
                             {% else %}
                                 {{ message.text|linebreaks }}
                             {% endif %}
@@ -743,9 +972,9 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script>
 // Configure marked.js for markdown rendering
 marked.setOptions({
@@ -780,8 +1009,10 @@ chatForm.onsubmit = async function(e) {
     
     // Show user message immediately
     chatMessages.innerHTML += `
-        <div class="message message-user">
-            <div class="message-content">${message}</div>
+        <div class="message-container">
+            <div class="message message-user">
+                <div class="message-content">${message}</div>
+            </div>
         </div>
     `;
     userInput.value = '';
@@ -790,9 +1021,11 @@ chatForm.onsubmit = async function(e) {
     // Show streaming message from bot
     const streamingId = `streaming-${Date.now()}`;
     chatMessages.innerHTML += `
-        <div class="message message-bot" id="${streamingId}">
-            <div class="message-content">
-                <div class="streaming-content"></div>
+        <div class="message-container">
+            <div class="message message-bot" id="${streamingId}">
+                <div class="message-content">
+                    <div class="streaming-content"></div>
+                </div>
             </div>
         </div>
     `;
@@ -858,84 +1091,130 @@ chatForm.onsubmit = async function(e) {
                                 finalContent = enhancedReply;
                                 
                                 // Process special elements that need JavaScript handling
+                                // Increase timeout to ensure KaTeX is fully loaded
                                 setTimeout(() => {
+                                    // Check if KaTeX is available
+                                    if (typeof katex === 'undefined') {
+                                        console.error('KaTeX is not loaded!');
+                                        return;
+                                    }
+                                    
+                                    console.log('KaTeX is available, processing formulas...');
+                                    
                                     // Handle LaTeX math formulas
                                     const mathElements = document.querySelectorAll('.math-formula');
-                                    mathElements.forEach(elem => {
-                                        const formula = elem.getAttribute('data-formula');
+                                    console.log(`Found ${mathElements.length} math elements`);
+                                    
+                                    mathElements.forEach((elem, index) => {
+                                        let formula = elem.getAttribute('data-formula');
+                                        console.log(`Processing formula ${index + 1}:`, formula);
+                                        
                                         if (formula) {
                                             try {
-                                                elem.innerHTML = katex.renderToString(formula, { displayMode: true });
+                                                // Clean up the formula if it has the $$ wrapper
+                                                formula = formula.replace(/^\$\$/, '').replace(/\$\$$/, '');
+                                                console.log('Cleaned formula:', formula);
+                                                
+                                                const rendered = katex.renderToString(formula, { 
+                                                    displayMode: true,
+                                                    throwOnError: false,
+                                                    strict: false
+                                                });
+                                                
+                                                elem.innerHTML = rendered;
+                                                console.log('Successfully rendered formula', index + 1);
                                             } catch (error) {
-                                                console.log('KaTeX error:', error);
-                                                elem.innerHTML = `<pre><code class="language-latex">${formula}</code></pre>`;
+                                                console.error('KaTeX error for formula', index + 1, ':', error);
+                                                console.error('Formula was:', formula);
+                                                elem.innerHTML = `<div class="formula-error">Formula rendering failed: ${formula}<br>Error: ${error.message}</div>`;
+                                            }
+                                        } else {
+                                            // Fallback: try to extract formula from the element content
+                                            let content = elem.textContent || elem.innerText;
+                                            console.log('No data-formula attribute, trying content:', content);
+                                            
+                                            if (content.includes('$$')) {
+                                                const match = content.match(/\$\$(.*?)\$\$/);
+                                                if (match) {
+                                                    formula = match[1];
+                                                    try {
+                                                        console.log('Fallback rendering formula:', formula);
+                                                        const rendered = katex.renderToString(formula, { 
+                                                            displayMode: true,
+                                                            throwOnError: false,
+                                                            strict: false
+                                                        });
+                                                        elem.innerHTML = rendered;
+                                                    } catch (error) {
+                                                        console.error('KaTeX fallback error:', error);
+                                                        elem.innerHTML = `<div class="formula-error">Formula rendering failed: ${formula}<br>Error: ${error.message}</div>`;
+                                                    }
+                                                }
                                             }
                                         }
                                     });
                                     
-                                    // Process markdown tables in table-container
-                                    const tableContainers = document.querySelectorAll('.table-container');
-                                    tableContainers.forEach(container => {
-                                        const markdownContent = container.textContent || container.innerText;
-                                        if (markdownContent.includes('|')) {
-                                            container.innerHTML = marked.parse(markdownContent);
-                                        }
+                                    // Table processing is now done on the backend
+                                    // Just ensure tables have proper styling
+                                    const tables = document.querySelectorAll('.table-container table');
+                                    tables.forEach(table => {
+                                        table.classList.add('formatted-table');
                                     });
                                     
                                     // Syntax highlighting for code blocks
                                     if (typeof Prism !== 'undefined') {
                                         Prism.highlightAll();
                                     }
-                                }, 100);
+                                }, 500);
                                 
                             } else {
                                 // For non-JSON responses, use the original processing logic
-                                let processedReply = enhancedReply;
+                            let processedReply = enhancedReply;
+                            
+                            // First, handle code blocks that contain markdown tables
+                            processedReply = processedReply.replace(/```md\s*\n([\s\S]*?)\n```/g, (match, content) => {
+                                return marked.parse(content);
+                            });
+                            
+                            // Handle LaTeX math formulas wrapped in $$
+                            processedReply = processedReply.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                                try {
+                                    return katex.renderToString(content, { displayMode: true });
+                                } catch (error) {
+                                    console.log('KaTeX error:', error);
+                                    return `<pre><code class="language-latex">${content}</code></pre>`;
+                                }
+                            });
+                            
+                            // Parse the markdown first
+                            let parsedReply = marked.parse(processedReply);
+                            
+                            // Then, replace the generated <pre><code> blocks with expandable ones
+                            parsedReply = parsedReply.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
+                                const lang = language || 'text';
+                                const lines = content.split('\n');
+                                const preview = lines.slice(0, 1).join('\n');
+                                const hasMore = lines.length > 1;
                                 
-                                // First, handle code blocks that contain markdown tables
-                                processedReply = processedReply.replace(/```md\s*\n([\s\S]*?)\n```/g, (match, content) => {
-                                    return marked.parse(content);
-                                });
-                                
-                                // Handle LaTeX math formulas wrapped in $$
-                                processedReply = processedReply.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
-                                    try {
-                                        return katex.renderToString(content, { displayMode: true });
-                                    } catch (error) {
-                                        console.log('KaTeX error:', error);
-                                        return `<pre><code class="language-latex">${content}</code></pre>`;
-                                    }
-                                });
-                                
-                                // Parse the markdown first
-                                let parsedReply = marked.parse(processedReply);
-                                
-                                // Then, replace the generated <pre><code> blocks with expandable ones
-                                parsedReply = parsedReply.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
-                                    const lang = language || 'text';
-                                    const lines = content.split('\n');
-                                    const preview = lines.slice(0, 1).join('\n');
-                                    const hasMore = lines.length > 1;
-                                    
-                                    let codeBlockHtml = `
-                                        <div class="code-block">
-                                            <div class="code-header">
-                                                <span class="code-language">${lang}</span>
-                                                <button class="code-toggle" onclick="toggleCodeBlock(this)">
-                                                    ${hasMore ? 'Show more' : 'Show code'}
-                                                </button>
-                                            </div>
-                                            <div class="code-content collapsed">
-                                                <pre><code class="language-${lang}">${content}</code></pre>
-                                            </div>
-                                            <div class="code-preview">
-                                                <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
-                                            </div>
+                                let codeBlockHtml = `
+                                    <div class="code-block">
+                                        <div class="code-header">
+                                            <span class="code-language">${lang}</span>
+                                            <button class="code-toggle" onclick="toggleCodeBlock(this)">
+                                                ${hasMore ? 'Show more' : 'Show code'}
+                                            </button>
                                         </div>
-                                    `;
-                                    
-                                    return codeBlockHtml;
-                                });
+                                        <div class="code-content collapsed">
+                                            <pre><code class="language-${lang}">${content}</code></pre>
+                                        </div>
+                                        <div class="code-preview">
+                                            <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                return codeBlockHtml;
+                            });
                                 
                                 finalContent = `<div class="markdown-content">${parsedReply}</div>`;
                             }
@@ -946,6 +1225,35 @@ chatForm.onsubmit = async function(e) {
                                     ${finalContent}
                                 </div>
                             `;
+                            
+                            // Apply table folding to newly added content
+                            setTimeout(() => {
+                                const newTableSections = streamingElem.querySelectorAll('.table-section');
+                                newTableSections.forEach(section => {
+                                    const tableContainer = section.querySelector('.table-container');
+                                    const toggleContainer = section.querySelector('.table-toggle-container');
+                                    const toggleText = toggleContainer ? toggleContainer.querySelector('.table-toggle-text') : null;
+                                    
+                                    if (tableContainer && toggleContainer && toggleText) {
+                                        const table = tableContainer.querySelector('table');
+                                        if (table) {
+                                            const rows = table.querySelectorAll('tbody tr');
+                                            
+                                            // Only show toggle button if table has more than 5 rows
+                                            if (rows.length <= 5) {
+                                                toggleContainer.style.display = 'none';
+                                            } else {
+                                                // Show only top 5 rows initially
+                                                rows.forEach((row, index) => {
+                                                    row.style.display = index < 5 ? '' : 'none';
+                                                });
+                                                // Set correct button text
+                                                toggleText.innerHTML = '▼ Show Complete Table';
+                                            }
+                                        }
+                                    }
+                                });
+                            }, 100);
                             
                             // Add feedback buttons outside the message bubble
                             const feedbackContainer = document.createElement('div');
@@ -963,8 +1271,14 @@ chatForm.onsubmit = async function(e) {
                                 </button>
                             `;
                             
-                            // Insert feedback buttons after the message
-                            streamingElem.parentNode.insertBefore(feedbackContainer, streamingElem.nextSibling);
+                            // Insert feedback buttons after the message container
+                            const messageContainer = streamingElem.closest('.message-container');
+                            if (messageContainer) {
+                                messageContainer.appendChild(feedbackContainer);
+                            } else {
+                                // Fallback to old method if container not found
+                                streamingElem.parentNode.insertBefore(feedbackContainer, streamingElem.nextSibling);
+                            }
                             
                             // Load feedback state for the new message after a longer delay to ensure DB save
                             setTimeout(() => {
@@ -1290,6 +1604,7 @@ setTimeout(() => {
 // Also call when DOM content is loaded
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
+        processExistingMessages();
         loadExistingFeedback();
         updateFAQButtonStates();
     }, 100);
@@ -1297,6 +1612,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Additional attempt after a longer delay to ensure everything is loaded
 setTimeout(() => {
+    processExistingMessages();
     loadExistingFeedback();
     updateFAQButtonStates();
 }, 1000);
@@ -1460,5 +1776,123 @@ async function updateFAQButtonStates() {
         }
     }
 }
+
+// NEW FUNCTIONS FOR RESTRUCTURED LAYOUT
+
+// Toggle code visibility in plot section
+function toggleCode(codeId) {
+    const codeBlock = document.getElementById(codeId);
+    const button = event.target;
+    
+    if (codeBlock.style.display === 'none' || codeBlock.style.display === '') {
+        codeBlock.style.display = 'block';
+        button.textContent = 'Hide Code';
+    } else {
+        codeBlock.style.display = 'none';
+        button.textContent = 'Code';
+    }
+}
+
+// Toggle SQL query visibility in table section
+function toggleSQL(sqlId) {
+    const sqlBlock = document.getElementById(sqlId);
+    const button = event.target;
+    
+    if (sqlBlock.style.display === 'none' || sqlBlock.style.display === '') {
+        sqlBlock.style.display = 'block';
+        button.textContent = 'Hide Query';
+    } else {
+        sqlBlock.style.display = 'none';
+        button.textContent = 'Query';
+    }
+}
+
+// Toggle table expansion (show only top 5 rows vs complete table)
+function toggleTable(tableId) {
+    const tableContainer = document.getElementById(tableId);
+    const toggleContainer = event.currentTarget;
+    const toggleText = toggleContainer.querySelector('.table-toggle-text');
+    const table = tableContainer.querySelector('table');
+    
+    if (!table) return;
+    
+    const rows = table.querySelectorAll('tbody tr');
+    const isExpanded = toggleText.textContent.includes('Show Top 5');
+    
+    if (isExpanded) {
+        // Show only top 5 rows
+        rows.forEach((row, index) => {
+            row.style.display = index < 5 ? '' : 'none';
+        });
+        toggleText.innerHTML = '▼ Show Complete Table';
+    } else {
+        // Show all rows
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        toggleText.innerHTML = '▲ Show Top 5 Rows';
+    }
+}
+
+// Switch tabs in combined information section
+function switchTab(tabId) {
+    // Hide all tab contents
+    const allTabContents = document.querySelectorAll('.tab-content');
+    allTabContents.forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Remove active class from all tab buttons
+    const allTabButtons = document.querySelectorAll('.tab-btn');
+    allTabButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    const selectedContent = document.getElementById(tabId);
+    if (selectedContent) {
+        selectedContent.style.display = 'block';
+    }
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Process LaTeX formulas if switching to formulas tab
+    if (tabId === 'formulas') {
+        setTimeout(processSpecialElements, 100);
+    }
+}
+
+// Initialize table folding on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fold tables to show only top 5 rows initially
+    setTimeout(() => {
+        const tableSections = document.querySelectorAll('.table-section');
+        tableSections.forEach(section => {
+            const tableContainer = section.querySelector('.table-container');
+            const toggleContainer = section.querySelector('.table-toggle-container');
+            const toggleText = toggleContainer ? toggleContainer.querySelector('.table-toggle-text') : null;
+            
+            if (tableContainer && toggleContainer && toggleText) {
+                const table = tableContainer.querySelector('table');
+                if (table) {
+                    const rows = table.querySelectorAll('tbody tr');
+                    
+                    // Only show toggle button if table has more than 5 rows
+                    if (rows.length <= 5) {
+                        toggleContainer.style.display = 'none';
+                    } else {
+                        // Show only top 5 rows initially
+                        rows.forEach((row, index) => {
+                            row.style.display = index < 5 ? '' : 'none';
+                        });
+                        // Set correct button text
+                        toggleText.innerHTML = '▼ Show Complete Table';
+                    }
+                }
+            }
+        });
+    }, 1000);
+});
 </script>
 {% endblock %}

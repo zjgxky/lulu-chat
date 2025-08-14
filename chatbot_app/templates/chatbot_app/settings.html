@@ -6,12 +6,12 @@
 
 {% block content %}
 <style>
-/* Toggle switcher styles */
+/* Modern toggle switch styles */
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    width: 50px;
+    height: 24px;
 }
 
 .toggle-switch input {
@@ -27,54 +27,164 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 34px;
+    background-color: #C8C2B8;
+    transition: .3s;
+    border-radius: 24px;
 }
 
 .toggle-slider:before {
     position: absolute;
     content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #FDFDF8;
+    transition: .3s;
     border-radius: 50%;
 }
 
 input:checked + .toggle-slider {
-    background-color: #3182ce;
+    background-color: #FF4646;
 }
 
 input:checked + .toggle-slider:before {
     transform: translateX(26px);
 }
+
+.settings-section {
+    background: #EFEEEC;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid #C8C2B8;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid #C8C2B8;
+}
+
+.settings-item:last-child {
+    border-bottom: none;
+}
+
+.settings-info {
+    flex: 1;
+}
+
+.settings-title {
+    font-weight: 500;
+    color: #140F0F;
+    margin-bottom: 4px;
+    font-size: 1rem;
+}
+
+.settings-description {
+    font-size: 0.85rem;
+    color: #524A43;
+    line-height: 1.4;
+}
+
+.section-title {
+    margin: 0 0 20px 0;
+    color: #140F0F;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+}
+
+.btn-primary {
+    background: #FF4646;
+    color: #FDFDF8;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-primary:hover {
+    background: #E63946;
+}
+
+.btn-secondary {
+    background: #C8C2B8;
+    color: #140F0F;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background: #140F0F;
+    color: #FDFDF8;
+}
+
+.select-input {
+    padding: 8px 12px;
+    border: 1px solid #C8C2B8;
+    border-radius: 4px;
+    background: #FDFDF8;
+    color: #140F0F;
+    font-size: 0.9rem;
+    min-width: 120px;
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: #FF4646;
+}
+
+.number-input {
+    padding: 8px 12px;
+    border: 1px solid #C8C2B8;
+    border-radius: 4px;
+    background: #FDFDF8;
+    color: #140F0F;
+    font-size: 0.9rem;
+    width: 80px;
+    text-align: center;
+}
+
+.number-input:focus {
+    outline: none;
+    border-color: #FF4646;
+}
 </style>
 
-<div style="max-width: 600px; margin: 0 auto;">
+<div style="max-width: 700px; margin: 0 auto;">
     <!-- Settings Header -->
-    <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px;">
-        <div style="display: flex; align-items: center; margin-bottom: 16px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
-                <span style="color: white; font-size: 1.2rem;">⚙️</span>
-            </div>
-            <div>
-                <h2 style="margin: 0; color: #2d3748; font-size: 1.5rem;">Settings</h2>
-                <p style="margin: 4px 0 0 0; color: #718096; font-size: 0.95rem;">Configure your chatbot preferences</p>
-            </div>
-        </div>
+    <div style="text-align: center; margin-bottom: 32px;">
+        <h2 style="color: #140F0F; font-size: 1.8rem; margin: 0 0 8px 0;">Settings</h2>
+        <p style="color: #524A43; font-size: 1rem; margin: 0;">Configure your chatbot preferences</p>
     </div>
     
-    <!-- Sidebar Header Settings -->
-    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px;">
-        <h3 style="margin: 0 0 20px 0; color: #2d3748; font-size: 1.2rem;">Sidebar Header</h3>
+    <!-- Interface Settings -->
+    <div class="settings-section">
+        <h3 class="section-title">Interface & Display</h3>
         
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0;">
-            <div>
-                <div style="font-weight: 500; color: #2d3748; margin-bottom: 4px;">Show Lulu Branding</div>
-                <div style="font-size: 0.9rem; color: #718096;">Display logo and "AI for Insights" in sidebar header</div>
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Show Lulu Branding</div>
+                <div class="settings-description">Display Lululemon logo and "AI for Insights" in sidebar header</div>
             </div>
             <label class="toggle-switch">
                 <input type="checkbox" id="lulu-branding-toggle">
@@ -82,18 +192,139 @@ input:checked + .toggle-slider:before {
             </label>
         </div>
         
-        <div style="margin-top: 16px; padding: 12px; background: #f7fafc; border-radius: 8px; font-size: 0.9rem; color: #4a5568;">
-            <strong>When ON:</strong> Shows Lululemon logo and "AI for Insights" text<br>
-            <strong>When OFF:</strong> Shows only "Chatbot" text
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Dark Mode</div>
+                <div class="settings-description">Switch between light and dark theme (coming soon)</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="dark-mode-toggle" disabled>
+                <span class="toggle-slider" style="opacity: 0.5;"></span>
+            </label>
+        </div>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Auto-scroll to Bottom</div>
+                <div class="settings-description">Automatically scroll to the latest message in chat</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="auto-scroll-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <!-- Chat Behavior Settings -->
+    <div class="settings-section">
+        <h3 class="section-title">Chat Behavior</h3>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Message Display Style</div>
+                <div class="settings-description">Choose how messages are displayed in chat</div>
+            </div>
+            <select class="select-input" id="message-style-select">
+                <option value="compact">Compact</option>
+                <option value="comfortable" selected>Comfortable</option>
+                <option value="spacious">Spacious</option>
+            </select>
+        </div>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Messages per Page</div>
+                <div class="settings-description">Number of messages to load initially</div>
+            </div>
+            <input type="number" class="number-input" id="messages-per-page" value="50" min="10" max="200" step="10">
+        </div>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Show Timestamps</div>
+                <div class="settings-description">Display timestamps for each message</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="show-timestamps-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <!-- Session Management -->
+    <div class="settings-section">
+        <h3 class="section-title">Session Management</h3>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Auto-save Sessions</div>
+                <div class="settings-description">Automatically save chat sessions as you type</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="auto-save-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Session History Limit</div>
+                <div class="settings-description">Maximum number of sessions to keep in sidebar</div>
+            </div>
+            <select class="select-input" id="session-limit-select">
+                <option value="20">20 sessions</option>
+                <option value="50" selected>50 sessions</option>
+                <option value="100">100 sessions</option>
+                <option value="unlimited">Unlimited</option>
+            </select>
+        </div>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Confirm Before Delete</div>
+                <div class="settings-description">Ask for confirmation when deleting sessions</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="confirm-delete-toggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <!-- Data & Privacy -->
+    <div class="settings-section">
+        <h3 class="section-title">Data & Privacy</h3>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Clear All Chat History</div>
+                <div class="settings-description">Permanently delete all your chat sessions and messages</div>
+            </div>
+            <button onclick="clearAllData()" style="background: #FF4646; color: #FDFDF8; border: none; padding: 8px 16px; border-radius: 4px; font-size: 0.85rem; cursor: pointer;">
+                Clear Data
+            </button>
+        </div>
+        
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Export Chat History</div>
+                <div class="settings-description">Download all your chat sessions as JSON</div>
+            </div>
+            <button onclick="exportData()" style="background: #C8C2B8; color: #140F0F; border: none; padding: 8px 16px; border-radius: 4px; font-size: 0.85rem; cursor: pointer;">
+                Export Data
+            </button>
         </div>
     </div>
     
     <!-- Action Buttons -->
-    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 32px;">
-        <button onclick="saveSettings()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; padding: 14px 32px; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease;">
+    <div class="action-buttons">
+        <button onclick="saveSettings()" class="btn-primary">
             Save Settings
         </button>
-        <a href="{% url 'logout' %}" style="display: inline-block; padding: 14px 32px; background: #fed7d7; color: #c53030; border: none; border-radius: 8px; text-decoration: none; font-size: 1rem; font-weight: 500; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.background='#feb2b2'" onmouseout="this.style.background='#fed7d7'">
+        <button onclick="resetSettings()" class="btn-secondary">
+            Reset to Defaults
+        </button>
+        <a href="{% url 'logout' %}" class="btn-secondary">
             Logout
         </a>
     </div>
@@ -103,44 +334,155 @@ input:checked + .toggle-slider:before {
 <div id="logo-url" data-url="{{ logo_url }}" style="display: none;"></div>
 
 <script>
-// Load current setting
-document.addEventListener('DOMContentLoaded', function() {
-    const brandingToggle = document.getElementById('lulu-branding-toggle');
-    const currentSetting = localStorage.getItem('lulu-branding') || 'true';
-    brandingToggle.checked = currentSetting === 'true';
+// Settings object to manage all preferences
+const Settings = {
+    // Default values
+    defaults: {
+        'lulu-branding': 'true',
+        'auto-scroll': 'true',
+        'message-style': 'comfortable',
+        'messages-per-page': '50',
+        'show-timestamps': 'false',
+        'auto-save': 'true',
+        'session-limit': '50',
+        'confirm-delete': 'true'
+    },
     
-    // Add toggle functionality
-    brandingToggle.addEventListener('change', function() {
-        const isEnabled = this.checked;
-        localStorage.setItem('lulu-branding', isEnabled);
-        updateSidebarHeader(isEnabled);
+    // Load all settings
+    load: function() {
+        for (const [key, defaultValue] of Object.entries(this.defaults)) {
+            const value = localStorage.getItem(key) || defaultValue;
+            this.updateUI(key, value);
+        }
+    },
+    
+    // Update UI elements based on setting
+    updateUI: function(key, value) {
+        const element = document.getElementById(key + '-toggle') || 
+                       document.getElementById(key + '-select') || 
+                       document.getElementById(key.replace('-', '-'));
+        
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = value === 'true';
+            } else if (element.tagName === 'SELECT') {
+                element.value = value;
+            } else if (element.type === 'number') {
+                element.value = value;
+            }
+        }
+    },
+    
+    // Save all settings
+    save: function() {
+        // Get all setting values
+        const settings = {
+            'lulu-branding': document.getElementById('lulu-branding-toggle').checked,
+            'auto-scroll': document.getElementById('auto-scroll-toggle').checked,
+            'message-style': document.getElementById('message-style-select').value,
+            'messages-per-page': document.getElementById('messages-per-page').value,
+            'show-timestamps': document.getElementById('show-timestamps-toggle').checked,
+            'auto-save': document.getElementById('auto-save-toggle').checked,
+            'session-limit': document.getElementById('session-limit-select').value,
+            'confirm-delete': document.getElementById('confirm-delete-toggle').checked
+        };
+        
+        // Save to localStorage
+        for (const [key, value] of Object.entries(settings)) {
+            localStorage.setItem(key, value);
+        }
+        
+        // Apply settings immediately
+        this.applySettings();
+        
+        return settings;
+    },
+    
+    // Apply settings to current page
+    applySettings: function() {
+        const brandingEnabled = localStorage.getItem('lulu-branding') === 'true';
+        updateSidebarHeader(brandingEnabled);
+        
+        // Apply message style
+        const messageStyle = localStorage.getItem('message-style') || 'comfortable';
+        applyMessageStyle(messageStyle);
+        
+        // Apply auto-scroll setting
+        const autoScroll = localStorage.getItem('auto-scroll') !== 'false';
+        if (autoScroll && typeof scrollToBottom === 'function') {
+            scrollToBottom();
+        }
+    },
+    
+    // Reset to defaults
+    reset: function() {
+        for (const [key, defaultValue] of Object.entries(this.defaults)) {
+            localStorage.setItem(key, defaultValue);
+            this.updateUI(key, defaultValue);
+        }
+        this.applySettings();
+    }
+};
+
+// Initialize settings on page load
+document.addEventListener('DOMContentLoaded', function() {
+    Settings.load();
+    
+    // Add event listeners for real-time updates
+    document.getElementById('lulu-branding-toggle').addEventListener('change', function() {
+        updateSidebarHeader(this.checked);
+    });
+    
+    document.getElementById('message-style-select').addEventListener('change', function() {
+        applyMessageStyle(this.value);
     });
 });
 
+// Save settings function
 function saveSettings() {
-    const brandingToggle = document.getElementById('lulu-branding-toggle');
-    const isEnabled = brandingToggle.checked;
-    localStorage.setItem('lulu-branding', isEnabled);
+    const settings = Settings.save();
     
     // Show success message
     const button = event.target;
     const originalText = button.textContent;
-    button.textContent = 'Settings Saved!';
-    button.style.background = 'linear-gradient(135deg, #38a169 0%, #2f855a 100%)';
+    button.textContent = '✓ Settings Saved!';
+    button.style.background = '#38A169';
     
     setTimeout(() => {
         button.textContent = originalText;
-        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        button.style.background = '#FF4646';
     }, 2000);
+    
+    console.log('Settings saved:', settings);
 }
 
+// Reset settings function
+function resetSettings() {
+    if (confirm('Are you sure you want to reset all settings to their default values?')) {
+        Settings.reset();
+        
+        // Show success message
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✓ Reset Complete!';
+        button.style.background = '#38A169';
+        button.style.color = '#FDFDF8';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '#C8C2B8';
+            button.style.color = '#140F0F';
+        }, 2000);
+    }
+}
+
+// Update sidebar header function
 function updateSidebarHeader(isEnabled) {
     const sidebarHeader = document.querySelector('.sidebar-header');
     const logoUrl = document.getElementById('logo-url').getAttribute('data-url');
     
     if (sidebarHeader) {
         if (isEnabled) {
-            // Show Lulu branding
             sidebarHeader.innerHTML = `
                 <div style="display: flex; align-items: center; margin-bottom: 8px;">
                     <img src="${logoUrl}" alt="Lululemon Logo" style="width: 30px; height: 30px; margin-right: 16px; object-fit: cover; object-position: center;">
@@ -148,21 +490,109 @@ function updateSidebarHeader(isEnabled) {
                 </div>
             `;
         } else {
-            // Show simple "Chatbot" text
             sidebarHeader.innerHTML = `
-                <div class="sidebar-title" style="font-size: 1.4rem; font-weight: 600; color: #1a202c; margin: 0;">Chatbot</div>
+                <div class="sidebar-title" style="font-size: 1.4rem; font-weight: 600; color: #140F0F; margin: 0;">Chatbot</div>
             `;
         }
     }
 }
 
-// Initialize sidebar header on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const brandingToggle = document.getElementById('lulu-branding-toggle');
-    if (brandingToggle) {
-        const isEnabled = brandingToggle.checked;
-        updateSidebarHeader(isEnabled);
+// Apply message style function
+function applyMessageStyle(style) {
+    const chatMessages = document.querySelector('.chat-messages');
+    if (chatMessages) {
+        // Remove existing style classes
+        chatMessages.classList.remove('compact-style', 'comfortable-style', 'spacious-style');
+        
+        // Add new style class
+        chatMessages.classList.add(style + '-style');
+        
+        // Apply CSS based on style
+        const messages = document.querySelectorAll('.message');
+        messages.forEach(message => {
+            switch(style) {
+                case 'compact':
+                    message.style.padding = '6px 10px';
+                    message.style.marginBottom = '8px';
+                    break;
+                case 'spacious':
+                    message.style.padding = '12px 16px';
+                    message.style.marginBottom = '20px';
+                    break;
+                default: // comfortable
+                    message.style.padding = '8px 12px';
+                    message.style.marginBottom = '16px';
+            }
+        });
     }
-});
+}
+
+// Clear all data function
+function clearAllData() {
+    const confirmDelete = localStorage.getItem('confirm-delete') !== 'false';
+    
+    let confirmed = true;
+    if (confirmDelete) {
+        confirmed = confirm('Are you sure you want to permanently delete ALL your chat history? This action cannot be undone.');
+    }
+    
+    if (confirmed) {
+        // Here you would typically make an API call to delete server-side data
+        // For now, we'll just clear localStorage
+        const settingsKeys = Object.keys(Settings.defaults);
+        const allKeys = Object.keys(localStorage);
+        
+        allKeys.forEach(key => {
+            if (!settingsKeys.includes(key)) {
+                localStorage.removeItem(key);
+            }
+        });
+        
+        alert('All chat history has been cleared.');
+        
+        // Reload the page to reflect changes
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+}
+
+// Export data function
+function exportData() {
+    // Collect all chat-related data from localStorage
+    const chatData = {};
+    const allKeys = Object.keys(localStorage);
+    const settingsKeys = Object.keys(Settings.defaults);
+    
+    allKeys.forEach(key => {
+        if (!settingsKeys.includes(key)) {
+            chatData[key] = localStorage.getItem(key);
+        }
+    });
+    
+    // Create and download JSON file
+    const dataStr = JSON.stringify(chatData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `lulu-chat-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✓ Exported!';
+    button.style.background = '#38A169';
+    button.style.color = '#FDFDF8';
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.style.background = '#C8C2B8';
+        button.style.color = '#140F0F';
+    }, 2000);
+}
 </script>
-{% endblock %} 
+{% endblock %}

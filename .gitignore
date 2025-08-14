@@ -1,0 +1,45 @@
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*.class
+*.so
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# Django相关
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# IDE相关
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 环境变量文件
+.env
+.env.local
+.env.production
+
+# 测试覆盖率
+htmlcov/
+.coverage
+.pytest_cache/
+
+# 打包文件
+dist/
+build/
+*.egg-info/

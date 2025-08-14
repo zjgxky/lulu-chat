@@ -4,8 +4,8 @@
     <title>Login - Chatbot</title>
     <style>
         body {
-            background: #f7f9fb;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #EFEEEC;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -13,52 +13,59 @@
             margin: 0;
         }
         .login-container {
-            background: #fff;
+            background: #C8C2B8;
             padding: 40px 32px 32px 32px;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(20,15,15,0.07);
             width: 340px;
+            border: 1px solid #7F746C;
         }
         .login-title {
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 24px;
-            color: #222;
+            color: #140F0F;
             text-align: center;
         }
         .login-form label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: #140F0F;
             font-weight: 500;
         }
         .login-form input {
             width: 100%;
             padding: 10px 12px;
             margin-bottom: 18px;
-            border-radius: 6px;
-            border: 1px solid #cfd8dc;
+            border-radius: 4px;
+            border: 1px solid #7F746C;
             font-size: 1.05rem;
-            background: #f7f9fb;
+            background: #EFEEEC;
             box-sizing: border-box;
+            color: #140F0F;
+        }
+        .login-form input:focus {
+            border-color: #2B1F1E;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(43, 31, 30, 0.1);
         }
         .login-form button {
             width: 100%;
             padding: 12px;
-            border-radius: 6px;
+            border-radius: 4px;
             border: none;
-            background: #007bff;
-            color: #fff;
+            background: #2B1F1E;
+            color: #EFEEEC;
             font-size: 1.08rem;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.15s;
         }
         .login-form button:hover {
-            background: #0056b3;
+            background: #140F0F;
         }
         .error {
-            color: #d9534f;
+            color: #2B1F1E;
             margin-bottom: 16px;
             text-align: center;
         }

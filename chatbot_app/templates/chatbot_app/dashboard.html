@@ -7,45 +7,42 @@
 {% block content %}
 <div style="max-width: 1200px; margin: 0 auto;">
     <!-- FAQ Sessions -->
-    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-        <h3 style="color: #2d3748; margin-bottom: 20px; font-size: 1.2rem;">📚 My FAQ</h3>
-        {% if faq_sessions %}
-            {% for session in faq_sessions %}
-            <div style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #38a169; transition: all 0.2s ease;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1;">
-                        <a href="{% url 'chat_session' session.id %}" style="text-decoration: none; color: inherit;">
-                            {% if session.preview %}
-                                <h4 style="color: #2d3748; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600; line-height: 1.4;">
-                                    {{ session.preview|truncatechars:150 }}
-                                </h4>
-                            {% else %}
-                                <h4 style="color: #2d3748; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600;">
-                                    Session without question preview
-                                </h4>
-                            {% endif %}
-                            <div style="font-size: 0.85rem; color: #718096;">
-                                Session created: {{ session.created_at|date:"M j, Y g:i A" }}<br>
-                                Added to FAQ: {{ session.faq_created_at|date:"M j, Y g:i A" }}
-                            </div>
-                        </a>
-                    </div>
-                    <div style="margin-left: 16px;">
-                        <a href="{% url 'chat_session' session.id %}" style="display: inline-block; padding: 8px 16px; background: #38a169; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s ease;">
-                            View Session
-                        </a>
-                    </div>
+    <h3 style="color: #140F0F; margin-bottom: 20px; font-size: 1.2rem;">My FAQ</h3>
+    {% if faq_sessions %}
+        {% for session in faq_sessions %}
+        <div style="margin-bottom: 16px; padding: 16px; background: #FDFDF8; border-radius: 6px; border-left: 4px solid #140F0F; transition: all 0.2s ease; border: 1px solid #EFEEEC;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <a href="{% url 'chat_session' session.session_id %}" style="text-decoration: none; color: inherit;">
+                        {% if session.preview %}
+                            <h4 style="color: #140F0F; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600; line-height: 1.4;">
+                                {{ session.preview|truncatechars:150 }}
+                            </h4>
+                        {% else %}
+                            <h4 style="color: #140F0F; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600;">
+                                Session without question preview
+                            </h4>
+                        {% endif %}
+                        <div style="font-size: 0.85rem; color: #7F746C;">
+                            Session created: {{ session.created_at|date:"M j, Y g:i A" }}<br>
+                            Added to FAQ: {{ session.faq_created_at|date:"M j, Y g:i A" }}
+                        </div>
+                    </a>
+                </div>
+                <div style="margin-left: 16px;">
+                    <a href="{% url 'chat_session' session.session_id %}" style="display: inline-block; padding: 8px 16px; background: #FF4646; color: #FDFDF8; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: 500; transition: all 0.15s ease;" onmouseover="this.style.background='#E63946'" onmouseout="this.style.background='#FF4646'">
+                        View Session
+                    </a>
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align: center; padding: 20px;">
-                <div style="font-size: 2rem; margin-bottom: 12px;">📝</div>
-                <p style="color: #718096; line-height: 1.6; margin: 0;">
-                    No FAQ sessions yet. Add conversations to FAQ using the "Add to FAQ" button in chat sessions.
-                </p>
-            </div>
-        {% endif %}
-    </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align: center; padding: 40px 20px;">
+            <p style="color: #524A43; line-height: 1.6; margin: 0;">
+                No FAQ sessions yet. Add conversations to FAQ using the "Add to FAQ" button in chat sessions.
+            </p>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

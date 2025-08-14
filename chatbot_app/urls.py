@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import chatbot_view, session_list_view, new_session_view, dify_proxy, dify_streaming_proxy, process_streamed_response, delete_session_view, login_view, logout_view, dashboard_view, feedback_view, get_feedback_state, execute_python_script_view, add_to_faq_view, check_faq_status, settings_view, test_formatting_view, debug_connection_view
+from .views import chatbot_view, session_list_view, new_session_view, dify_proxy, dify_streaming_proxy, process_streamed_response, delete_session_view, login_view, logout_view, dashboard_view, feedback_view, get_feedback_state, execute_python_script_view, add_to_faq_view, check_faq_status, settings_view, test_formatting_view, debug_connection_view, debug_python_view, debug_katex_view, rename_session_view, add_session_to_faq_view, rename_faq_session_view, delete_faq_session_view, remove_faq_session_view
 
 urlpatterns = [
     path("login/", login_view, name="login"),
@@ -11,6 +11,12 @@ urlpatterns = [
     path("sessions/new/", new_session_view, name="new_session"),
     path("sessions/<int:session_id>/", chatbot_view, name="chat_session"),
     path("sessions/<int:session_id>/delete/", delete_session_view, name="delete_session"),
+    path("rename-session/<int:session_id>/", rename_session_view, name="rename_session"),
+    path("add-session-to-faq/<int:session_id>/", add_session_to_faq_view, name="add_session_to_faq"),
+    path("delete-session/<int:session_id>/", delete_session_view, name="delete_session_alt"),
+    path("rename-faq-session/<int:faq_id>/", rename_faq_session_view, name="rename_faq_session"),
+    path("delete-faq-session/<int:faq_id>/", delete_faq_session_view, name="delete_faq_session"),
+    path("remove-faq-session/<int:faq_id>/", remove_faq_session_view, name="remove_faq_session"),
     path("api/dify_proxy/", dify_proxy, name="dify_proxy"),
     path("api/dify_streaming_proxy/", dify_streaming_proxy, name="dify_streaming_proxy"),
     path("api/process_streamed_response/", process_streamed_response, name="process_streamed_response"),
@@ -21,4 +27,6 @@ urlpatterns = [
     path("api/check-faq-status/<int:session_id>/", check_faq_status, name="check_faq_status"),
     path("test-formatting/", test_formatting_view, name="test_formatting"),
     path("debug-connection/", debug_connection_view, name="debug_connection"),
+    path("debug-python/", debug_python_view, name="debug_python"),
+    path("debug-katex/", debug_katex_view, name="debug_katex"),
 ]
