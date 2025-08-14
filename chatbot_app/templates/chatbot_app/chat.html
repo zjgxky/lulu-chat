@@ -942,13 +942,13 @@
                     </div>
                     {% if message.sender == 'bot' %}
                         <div class="feedback-buttons" data-message-id="{{ message.id }}">
-                            <button class="feedback-btn like-btn" onclick="submitFeedback('like', {{ current_session.id }}, {{ message.id }}, event)" title="Like this response (click again to remove)">
+                            <button class="feedback-btn like-btn" onclick="submitFeedback('like', '{{ current_session.id }}', '{{ message.id }}', event)" title="Like this response (click again to remove)">
                                 👍
                             </button>
-                            <button class="feedback-btn dislike-btn" onclick="submitFeedback('dislike', {{ current_session.id }}, {{ message.id }}, event)" title="Dislike this response (click again to remove)">
+                            <button class="feedback-btn dislike-btn" onclick="submitFeedback('dislike', '{{ current_session.id }}', '{{ message.id }}', event)" title="Dislike this response (click again to remove)">
                                 👎
                             </button>
-                            <button class="faq-btn" onclick="addToFAQ({{ current_session.id }}, {{ message.id }}, event)" title="Add this conversation to FAQ" data-session-id="{{ current_session.id }}">
+                            <button class="faq-btn" onclick="addToFAQ('{{ current_session.id }}', '{{ message.id }}', event)" title="Add this conversation to FAQ" data-session-id="{{ current_session.id }}">
                                 Add to FAQ
                             </button>
                         </div>
