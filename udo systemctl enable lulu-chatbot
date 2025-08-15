@@ -1,0 +1,21 @@
+[0;1;32m●[0m lulu-chatbot.service - Lulu Chatbot Django Application
+     Loaded: loaded (/etc/systemd/system/lulu-chatbot.service; disabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Thu 2025-08-14 17:05:52 CST; 5s ago
+   Main PID: 753075 (gunicorn)
+      Tasks: 4 (limit: 36805)
+     Memory: 98.6M
+     CGroup: /system.slice/lulu-chatbot.service
+             ├─753075 /mnt/home/steven/lulu-chat/venv_mychanges/bin/python /mnt/home/steven/lulu-chat/venv_mychanges/bin/gunicorn --workers 3 --bind 127.0.0.1:8001 chatbot_project.wsgi:application
+             ├─753086 /mnt/home/steven/lulu-chat/venv_mychanges/bin/python /mnt/home/steven/lulu-chat/venv_mychanges/bin/gunicorn --workers 3 --bind 127.0.0.1:8001 chatbot_project.wsgi:application
+             ├─753087 /mnt/home/steven/lulu-chat/venv_mychanges/bin/python /mnt/home/steven/lulu-chat/venv_mychanges/bin/gunicorn --workers 3 --bind 127.0.0.1:8001 chatbot_project.wsgi:application
+             └─753088 /mnt/home/steven/lulu-chat/venv_mychanges/bin/python /mnt/home/steven/lulu-chat/venv_mychanges/bin/gunicorn --workers 3 --bind 127.0.0.1:8001 chatbot_project.wsgi:application
+
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ systemd[1]: [0;1;31m[0;1;39m[0;1;31mlulu-chatbot.service: Ignoring invalid environment assignment 'export DIFY_TIMEOUT=60': /mnt/home/steven/.lulu_env[0m
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ systemd[1]: [0;1;31m[0;1;39m[0;1;31mlulu-chatbot.service: Ignoring invalid environment assignment 'export DATABASE_URL=sqlite:///home/steven/lulu-chat/db.sqlite3': /mnt/home/steven/.lulu_env[0m
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ systemd[1]: Started Lulu Chatbot Django Application.
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ gunicorn[753075]: [2025-08-14 17:05:52 +0800] [753075] [INFO] Starting gunicorn 23.0.0
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ gunicorn[753075]: [2025-08-14 17:05:52 +0800] [753075] [INFO] Listening at: http://127.0.0.1:8001 (753075)
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ gunicorn[753075]: [2025-08-14 17:05:52 +0800] [753075] [INFO] Using worker: sync
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ gunicorn[753086]: [2025-08-14 17:05:52 +0800] [753086] [INFO] Booting worker with pid: 753086
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ gunicorn[753087]: [2025-08-14 17:05:52 +0800] [753087] [INFO] Booting worker with pid: 753087
+Aug 14 17:05:52 iZt4nd3kuaspkb4iyb5vqwZ gunicorn[753088]: [2025-08-14 17:05:52 +0800] [753088] [INFO] Booting worker with pid: 753088
