@@ -148,4 +148,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Dify API configuration
 DIFY_API_URL = os.environ.get('DIFY_API_URL', 'https://api.dify.ai/v1/chat-messages')
 DIFY_API_KEY = os.environ.get('DIFY_API_KEY')
-DIFY_TIMEOUT = int(os.environ.get('DIFY_TIMEOUT', '30'))
+DIFY_TIMEOUT = int(os.environ.get('DIFY_TIMEOUT', '90'))
