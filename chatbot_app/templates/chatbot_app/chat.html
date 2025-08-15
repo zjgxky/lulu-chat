@@ -920,6 +920,64 @@
         border: 1px solid #feb2b2;
         border-radius: 8px;
     }
+    
+    /* Error message styles */
+    .error-message {
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+        color: #dc2626;
+    }
+    
+    .error-message h4 {
+        margin: 0 0 12px 0;
+        color: #b91c1c;
+        font-size: 1.1rem;
+    }
+    
+    .error-message p {
+        margin: 8px 0;
+        line-height: 1.5;
+    }
+    
+    .error-message ul {
+        margin: 8px 0;
+        padding-left: 20px;
+    }
+    
+    .error-message li {
+        margin: 4px 0;
+        line-height: 1.4;
+    }
+    
+    .error-message pre {
+        background: #ffffff;
+        border: 1px solid #f87171;
+        border-radius: 4px;
+        padding: 12px;
+        margin: 8px 0;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .error-message details {
+        margin: 12px 0;
+    }
+    
+    .error-message summary {
+        cursor: pointer;
+        font-weight: 600;
+        padding: 8px 0;
+        color: #b91c1c;
+    }
+    
+    .error-message summary:hover {
+        color: #dc2626;
+    }
 </style>
 
 <div class="chat-container">
@@ -1033,17 +1091,30 @@ chatForm.onsubmit = async function(e) {
     
     // Start streaming
     try {
+        // Add timeout to the fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes timeout
+        
         const response = await fetch("{% url 'dify_streaming_proxy' %}", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({message, session_id: sessionId})
+            body: JSON.stringify({message, session_id: sessionId}),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
+        // Check if response is ok
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         const streamingElem = document.getElementById(streamingId);
         if (!streamingElem) return;
         
         const streamingContent = streamingElem.querySelector('.streaming-content');
         let fullReply = "";
+        let hasError = false;
         
         // Handle streaming response
         const reader = response.body.getReader();
@@ -1071,18 +1142,29 @@ chatForm.onsubmit = async function(e) {
                             fullReply = data.full_reply;
                             
                             // Process the complete response with plots and formatting
-                            const processResponse = await fetch("{% url 'process_streamed_response' %}", {
-                                method: "POST",
-                                headers: {"Content-Type": "application/json"},
-                                body: JSON.stringify({
-                                    full_reply: fullReply,
-                                    session_id: sessionId
-                                })
-                            });
-                            
-                            const processData = await processResponse.json();
-                            const enhancedReply = processData.reply;
-                            const isJsonResponse = processData.is_json_response;
+                            try {
+                                const processResponse = await fetch("{% url 'process_streamed_response' %}", {
+                                    method: "POST",
+                                    headers: {"Content-Type": "application/json"},
+                                    body: JSON.stringify({
+                                        full_reply: fullReply,
+                                        session_id: sessionId
+                                    })
+                                });
+                                
+                                if (!processResponse.ok) {
+                                    throw new Error(`Processing failed: HTTP ${processResponse.status}`);
+                                }
+                                
+                                const processData = await processResponse.json();
+                                
+                                // Check if the response contains an error
+                                if (processData.error) {
+                                    throw new Error(`Processing error: ${processData.error}`);
+                                }
+                                
+                                const enhancedReply = processData.reply;
+                                const isJsonResponse = processData.is_json_response;
                             
                             let finalContent;
                             
@@ -1287,24 +1369,108 @@ chatForm.onsubmit = async function(e) {
                             
                             scrollToBottom();
                             
+                            } catch (processingError) {
+                                console.error('Error processing response:', processingError);
+                                hasError = true;
+                                streamingElem.innerHTML = `
+                                    <div class="message-content">
+                                        <div class="error-message">
+                                            <h4>⚠️ Response Processing Error</h4>
+                                            <p>There was an issue processing the server response. This might be due to:</p>
+                                            <ul>
+                                                <li>Network timeout or connection issues</li>
+                                                <li>Server overload or temporary unavailability</li>
+                                                <li>Invalid JSON format in the response</li>
+                                            </ul>
+                                            <details>
+                                                <summary>Technical Details</summary>
+                                                <pre>${processingError.message}</pre>
+                                                <p><strong>Raw Response:</strong></p>
+                                                <pre>${fullReply.substring(0, 500)}${fullReply.length > 500 ? '...' : ''}</pre>
+                                            </details>
+                                            <p><em>Please try your question again. If the problem persists, consider rephrasing your query or trying again later.</em></p>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            
                         } else if (data.type === 'error') {
+                            hasError = true;
                             streamingElem.innerHTML = `
-                                <div class="message-content">Error: ${data.error}</div>
+                                <div class="message-content">
+                                    <div class="error-message">
+                                        <h4>❌ Server Error</h4>
+                                        <p>The server encountered an error while processing your request:</p>
+                                        <pre>${data.error}</pre>
+                                        <p><em>Please try again. If the problem persists, the server may be experiencing high load.</em></p>
+                                    </div>
+                                </div>
                             `;
                         }
                     } catch (error) {
-                        console.error('Error parsing streaming data:', error);
+                        console.error('Error parsing streaming data:', error, 'Line:', line);
+                        // Don't show error for every parsing failure, as some lines might be incomplete
                     }
                 }
             }
         }
         
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Network/Connection Error:', error);
         const streamingElem = document.getElementById(streamingId);
         if (streamingElem) {
+            let errorMessage = 'Unknown error occurred';
+            let suggestions = [];
+            
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timeout (10 minutes exceeded)';
+                suggestions = [
+                    'The server took too long to respond',
+                    'Try a simpler question or break it into smaller parts',
+                    'Check your internet connection',
+                    'The server may be experiencing high load'
+                ];
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Network connection failed';
+                suggestions = [
+                    'Check your internet connection',
+                    'The server may be temporarily unavailable',
+                    'Try refreshing the page and trying again'
+                ];
+            } else if (error.message.includes('HTTP')) {
+                errorMessage = `Server error: ${error.message}`;
+                suggestions = [
+                    'The server returned an error response',
+                    'Try again in a few moments',
+                    'If the problem persists, the server may be down for maintenance'
+                ];
+            } else {
+                errorMessage = error.message || 'Unexpected error';
+                suggestions = [
+                    'Try refreshing the page',
+                    'Check your internet connection',
+                    'Try again with a different question'
+                ];
+            }
+            
             streamingElem.innerHTML = `
-                <div class="message-content">Sorry, there was an error processing your message.</div>
+                <div class="message-content">
+                    <div class="error-message">
+                        <h4>🔌 Connection Error</h4>
+                        <p><strong>Error:</strong> ${errorMessage}</p>
+                        <p>Possible solutions:</p>
+                        <ul>
+                            ${suggestions.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                        <details>
+                            <summary>Technical Details</summary>
+                            <pre>Error Type: ${error.name || 'Unknown'}
+Error Message: ${error.message || 'No message'}
+Stack: ${error.stack ? error.stack.substring(0, 300) + '...' : 'Not available'}</pre>
+                        </details>
+                        <p><em>Please try your question again.</em></p>
+                    </div>
+                </div>
             `;
         }
     }

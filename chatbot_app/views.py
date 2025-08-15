@@ -73,6 +73,11 @@ def chatbot_view(request, session_id=None):
     })
 
 def post_to_dify(query, user_id, conversation_id=None, files=None, response_mode="streaming", inputs=None):
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+    import os
+    
     url = settings.DIFY_API_URL
     
     # Check if API key is properly configured
@@ -92,15 +97,28 @@ def post_to_dify(query, user_id, conversation_id=None, files=None, response_mode
         "files": files or []
     }
     
-    # Get timeout from settings
-    timeout = getattr(settings, 'DIFY_TIMEOUT', 30)
+    # Enhanced timeout and retry configuration
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        raise_on_status=False
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    
+    # Use longer timeout - 600 seconds (10 minutes)
+    timeout = int(os.environ.get('DIFY_TIMEOUT', 600))
     
     print(f"DEBUG: Making request to Dify API: {url}")
+    print(f"DEBUG: Timeout set to: {timeout} seconds")
     print(f"DEBUG: API Key configured: {settings.DIFY_API_KEY[:10]}..." if len(settings.DIFY_API_KEY) > 10 else "DEBUG: API Key too short")
     
     if response_mode == "streaming":
         # For streaming, return the response object directly
-        response = requests.post(url, headers=headers, json=payload, stream=True, timeout=timeout)
+        response = session.post(url, headers=headers, json=payload, stream=True, timeout=timeout)
         # Check for authentication errors
         if response.status_code == 401:
             print(f"DEBUG: Authentication failed. Status: {response.status_code}")
@@ -113,7 +131,7 @@ def post_to_dify(query, user_id, conversation_id=None, files=None, response_mode
         return response
     else:
         # For blocking, return JSON response
-        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        response = session.post(url, headers=headers, json=payload, timeout=timeout)
         if response.status_code == 401:
             raise ValueError(f"Authentication failed with Dify API. Please check your DIFY_API_KEY. Status: {response.status_code}")
         elif response.status_code >= 400:
@@ -166,29 +184,48 @@ def dify_proxy(request):
         
         # Process the streaming response
         print(f"DEBUG: Processing streaming response...")
+        chunk_count = 0
+        total_chunks_size = 0
+        
         for chunk in dify_response.iter_content(chunk_size=1024):
             if chunk:
-                chunk_str = chunk.decode('utf-8')
-                print(f"DEBUG: Chunk: {chunk_str[:100]}...")
-                lines = chunk_str.split('\n')
+                chunk_count += 1
+                chunk_size = len(chunk)
+                total_chunks_size += chunk_size
                 
-                for line in lines:
-                    if line.startswith('data: '):
-                        try:
-                            data = json.loads(line[6:])
-                            print(f"DEBUG: Parsed: {data}")
-                            if data.get('event') == 'agent_message':
-                                if 'answer' in data:
-                                    full_reply += data['answer']
-                                    print(f"DEBUG: Added: {data['answer']}")
-                            elif data.get('event') == 'message_end':
-                                # Extract conversation_id if available
-                                if 'conversation_id' in data and not conversation_id:
-                                    conversation_id_extracted = data['conversation_id']
-                                    print(f"DEBUG: Conversation ID: {conversation_id_extracted}")
-                        except json.JSONDecodeError as e:
-                            print(f"DEBUG: JSON error: {e}")
-                            continue
+                try:
+                    chunk_str = chunk.decode('utf-8')
+                    print(f"DEBUG: Chunk {chunk_count} (size: {chunk_size}): {chunk_str[:100]}...")
+                    lines = chunk_str.split('\n')
+                    
+                    for line_num, line in enumerate(lines):
+                        if line.startswith('data: '):
+                            try:
+                                json_str = line[6:]
+                                data = json.loads(json_str)
+                                print(f"DEBUG: Chunk {chunk_count}, Line {line_num} - Parsed: {data}")
+                                
+                                if data.get('event') == 'agent_message':
+                                    if 'answer' in data:
+                                        answer_part = data['answer']
+                                        full_reply += answer_part
+                                        print(f"DEBUG: Added answer part (length: {len(answer_part)})")
+                                elif data.get('event') == 'message_end':
+                                    # Extract conversation_id if available
+                                    if 'conversation_id' in data and not conversation_id:
+                                        conversation_id_extracted = data['conversation_id']
+                                        print(f"DEBUG: Conversation ID extracted: {conversation_id_extracted}")
+                            except json.JSONDecodeError as e:
+                                print(f"DEBUG: JSON decode error in chunk {chunk_count}, line {line_num}: {e}")
+                                print(f"DEBUG: Problematic JSON string: {json_str[:200]}...")
+                                continue
+                except UnicodeDecodeError as e:
+                    print(f"DEBUG: Unicode decode error in chunk {chunk_count}: {e}")
+                    print(f"DEBUG: Raw chunk bytes: {chunk[:100]}...")
+                    continue
+                    
+        print(f"DEBUG: Streaming complete. Processed {chunk_count} chunks, total size: {total_chunks_size} bytes")
+        print(f"DEBUG: Final reply length: {len(full_reply)} characters")
         
         print(f"DEBUG: Final reply: {full_reply}")
         
@@ -256,10 +293,43 @@ def dify_proxy(request):
             "reply": enhanced_reply
         })
         
-    except Exception as e:
-        error_msg = f"Error: {str(e)}"
+    except requests.exceptions.Timeout as e:
+        timeout_duration = int(os.environ.get('DIFY_TIMEOUT', 600))
+        error_msg = f"Request timeout: The server took too long to respond (timeout: {timeout_duration}s). Please try again with a simpler query."
+        print(f"DEBUG: Timeout error: {e}")
         ChatMessage.objects.create(session=session, sender="bot", text=error_msg)
-        return JsonResponse({"reply": error_msg})
+        return JsonResponse({
+            "reply": error_msg,
+            "error_type": "timeout",
+            "timeout_duration": timeout_duration
+        })
+    except requests.exceptions.ConnectionError as e:
+        error_msg = f"Connection error: Unable to connect to the AI service. Please check your internet connection and try again."
+        print(f"DEBUG: Connection error: {e}")
+        ChatMessage.objects.create(session=session, sender="bot", text=error_msg)
+        return JsonResponse({
+            "reply": error_msg,
+            "error_type": "connection"
+        })
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request error: {str(e)}"
+        print(f"DEBUG: Request exception: {e}")
+        ChatMessage.objects.create(session=session, sender="bot", text=error_msg)
+        return JsonResponse({
+            "reply": error_msg,
+            "error_type": "request"
+        })
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        print(f"DEBUG: Unexpected error: {e}")
+        print(f"DEBUG: Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        ChatMessage.objects.create(session=session, sender="bot", text=error_msg)
+        return JsonResponse({
+            "reply": error_msg,
+            "error_type": "unexpected"
+        })
 
 
 @csrf_exempt
