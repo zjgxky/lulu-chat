@@ -361,11 +361,18 @@
     /* Expandable code blocks */
     .code-block {
         margin: 12px 0;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #140F0F;
         border-radius: 8px;
         overflow: hidden;
         background: #f8fafc;
+        display: none; /* Hidden by default */
     }
+    
+    .code-block.show {
+        display: block; /* Visible when toggled */
+    }
+    
+
     
     .code-header {
         display: flex;
@@ -383,43 +390,46 @@
         text-transform: uppercase;
     }
     
-    .code-toggle {
-        background: #3182ce;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-    
-    .code-toggle:hover {
-        background: #2c5aa0;
-    }
+
     
     .code-content {
-        display: none;
         background: #f7fafc;
         border-top: 1px solid #e2e8f0;
     }
     
-    .code-content.expanded {
-        display: block;
+    /* Code toggle container and button styles */
+    .code-toggle-container {
+        margin: 12px 0 0 0;
+        text-align: right;
+        padding-right: 16px;
     }
     
-    .code-preview {
-        background: #f7fafc;
-        padding: 12px;
-        border-top: 1px solid #e2e8f0;
+    .code-toggle-btn {
+        background: #140F0F;
+        color: white;
+        border: 1px solid #140F0F;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
     }
     
-    .code-preview pre {
-        margin: 0;
-        background: none;
-        border: none;
-        padding: 0;
+    .code-toggle-btn:hover {
+        background: #2a2522;
+        border-color: #2a2522;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(20, 15, 15, 0.3);
     }
+    
+    .code-toggle-btn:active {
+        transform: translateY(0);
+        background: #140F0F;
+        border-color: #140F0F;
+    }
+    
+
     
     .code-content pre {
         margin: 0;
@@ -470,6 +480,7 @@
         border-bottom: 1px solid #e5e7eb;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 8px;
     }
     
@@ -668,32 +679,36 @@
     
     /* Plot section specific styles */
     .plot-section .section-content {
-        position: relative;
+        padding: 16px;
     }
     
-    .code-toggle-btn {
-        position: absolute;
-        bottom: 15px;
-        right: 15px;
-        background: #000000;
+    .header-copy-btn {
+        background: #140F0F;
         color: white;
         border: none;
-        padding: 8px 16px;
+        padding: 6px 12px;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 12px;
         font-weight: 500;
-        transition: background-color 0.2s;
-        z-index: 10;
+        transition: all 0.2s ease;
+        white-space: nowrap;
     }
     
-    .code-toggle-btn:hover {
-        background: #333333;
+    .header-copy-btn:hover {
+        background: #2a2522;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(20, 15, 15, 0.3);
+    }
+    
+    .header-copy-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
     
     /* Table section specific styles */
     .table-section .section-content {
-        position: relative;
+        padding: 16px;
     }
     
     /* Table toggle container - like error divider style */
@@ -726,25 +741,7 @@
         color: #374151;
     }
     
-    .sql-toggle-btn {
-        position: absolute;
-        bottom: 15px;
-        right: 15px;
-        background: #000000;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: background-color 0.2s;
-        z-index: 10;
-    }
-    
-    .sql-toggle-btn:hover {
-        background: #333333;
-    }
+
     
     /* Tab bar styles for combined information section */
     .tab-bar {
@@ -1271,26 +1268,34 @@ chatForm.onsubmit = async function(e) {
                             // Parse the markdown first
                             let parsedReply = marked.parse(processedReply);
                             
-                            // Then, replace the generated <pre><code> blocks with expandable ones
+                            // Handle code blocks with collapsible format
                             parsedReply = parsedReply.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
                                 const lang = language || 'text';
-                                const lines = content.split('\n');
-                                const preview = lines.slice(0, 1).join('\n');
-                                const hasMore = lines.length > 1;
+                                let displayTitle = lang;
+                                let buttonText = 'Show Code';
+                                
+                                // Use proper titles for known languages
+                                if (lang === 'python') {
+                                    displayTitle = 'Plot Code';
+                                    buttonText = 'Show Code';
+                                } else if (lang === 'sql') {
+                                    displayTitle = 'SQL Query';
+                                    buttonText = 'Show Query';
+                                }
+                                
+                                const uniqueId = 'code-' + Math.random().toString(36).substr(2, 9);
                                 
                                 let codeBlockHtml = `
-                                    <div class="code-block">
+                                    <div class="code-toggle-container">
+                                        <button class="code-toggle-btn" onclick="toggleCodeSection('${uniqueId}', this)">${buttonText}</button>
+                                    </div>
+                                    <div class="code-block" id="${uniqueId}" style="display: none;">
                                         <div class="code-header">
-                                            <span class="code-language">${lang}</span>
-                                            <button class="code-toggle" onclick="toggleCodeBlock(this)">
-                                                ${hasMore ? 'Show more' : 'Show code'}
-                                            </button>
+                                            <span class="code-language">${displayTitle}</span>
+                                            <button class="code-copy-btn" onclick="copyToClipboard(this, '${uniqueId}-content')">Copy</button>
                                         </div>
-                                        <div class="code-content collapsed">
-                                            <pre><code class="language-${lang}">${content}</code></pre>
-                                        </div>
-                                        <div class="code-preview">
-                                            <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
+                                        <div class="code-content">
+                                            <pre><code class="language-${lang}" id="${uniqueId}-content">${content}</code></pre>
                                         </div>
                                     </div>
                                 `;
@@ -1336,6 +1341,15 @@ chatForm.onsubmit = async function(e) {
                                     }
                                 });
                             }, 100);
+                            
+                            // CRITICAL: Initialize tabs for newly added Information sections
+                            setTimeout(() => {
+                                console.log('Initializing tabs for new content...');
+                                const newTabSections = streamingElem.querySelectorAll('.combined-section');
+                                newTabSections.forEach(section => {
+                                    initializeTabSection(section);
+                                });
+                            }, 150);
                             
                             // Add feedback buttons outside the message bubble
                             const feedbackContainer = document.createElement('div');
@@ -1559,26 +1573,34 @@ function processExistingMessages() {
             // Parse the markdown first
             let parsedText = marked.parse(messageText);
             
-            // Then, replace the generated <pre><code> blocks with expandable ones
+            // Handle code blocks with collapsible format
             parsedText = parsedText.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, language, content) => {
                 const lang = language || 'text';
-                const lines = content.split('\n');
-                const preview = lines.slice(0, 1).join('\n');
-                const hasMore = lines.length > 1;
+                let displayTitle = lang;
+                let buttonText = 'Show Code';
+                
+                // Use proper titles for known languages
+                if (lang === 'python') {
+                    displayTitle = 'Plot Code';
+                    buttonText = 'Show Code';
+                } else if (lang === 'sql') {
+                    displayTitle = 'SQL Query';
+                    buttonText = 'Show Query';
+                }
+                
+                const uniqueId = 'code-' + Math.random().toString(36).substr(2, 9);
                 
                 let codeBlockHtml = `
-                    <div class="code-block">
+                    <div class="code-toggle-container">
+                        <button class="code-toggle-btn" onclick="toggleCodeSection('${uniqueId}', this)">${buttonText}</button>
+                    </div>
+                    <div class="code-block" id="${uniqueId}" style="display: none;">
                         <div class="code-header">
-                            <span class="code-language">${lang}</span>
-                            <button class="code-toggle" onclick="toggleCodeBlock(this)">
-                                ${hasMore ? 'Show more' : 'Show code'}
-                            </button>
+                            <span class="code-language">${displayTitle}</span>
+                            <button class="code-copy-btn" onclick="copyToClipboard(this, '${uniqueId}-content')">Copy</button>
                         </div>
-                        <div class="code-content collapsed">
-                            <pre><code class="language-${lang}">${content}</code></pre>
-                        </div>
-                        <div class="code-preview">
-                            <pre><code class="language-${lang}">${preview}${hasMore ? '\n...' : ''}</code></pre>
+                        <div class="code-content">
+                            <pre><code class="language-${lang}" id="${uniqueId}-content">${content}</code></pre>
                         </div>
                     </div>
                 `;
@@ -1600,22 +1622,39 @@ function processExistingMessages() {
     });
 }
 
-// Toggle code block visibility
-function toggleCodeBlock(button) {
-    const codeBlock = button.closest('.code-block');
-    const content = codeBlock.querySelector('.code-content');
-    const preview = codeBlock.querySelector('.code-preview');
+// Toggle code section visibility
+function toggleCodeSection(codeId, button) {
+    const codeBlock = document.getElementById(codeId);
     
-    if (content.classList.contains('expanded')) {
-        // Collapse
-        content.classList.remove('expanded');
-        preview.style.display = 'block';
-        button.textContent = content.querySelector('pre code').textContent.split('\n').length > 1 ? 'Show more' : 'Show code';
+    if (!codeBlock) {
+        console.error('Code block not found:', codeId);
+        return;
+    }
+    
+    const isHidden = codeBlock.style.display === 'none' || !codeBlock.classList.contains('show');
+    
+    if (isHidden) {
+        // Show the code block
+        codeBlock.style.display = 'block';
+        codeBlock.classList.add('show');
+        
+        // Update button text based on type
+        if (button.textContent === 'Show Code') {
+            button.textContent = 'Hide Code';
+        } else if (button.textContent === 'Show Query') {
+            button.textContent = 'Hide Query';
+        }
     } else {
-        // Expand
-        content.classList.add('expanded');
-        preview.style.display = 'none';
-        button.textContent = 'Hide code';
+        // Hide the code block
+        codeBlock.style.display = 'none';
+        codeBlock.classList.remove('show');
+        
+        // Update button text based on type
+        if (button.textContent === 'Hide Code') {
+            button.textContent = 'Show Code';
+        } else if (button.textContent === 'Hide Query') {
+            button.textContent = 'Show Query';
+        }
     }
 }
 
@@ -1760,11 +1799,40 @@ function downloadPlot(plotUrl, filename) {
     document.body.removeChild(link);
 }
 
+// Initialize tabs and content properly
+function initializeTabs() {
+    try {
+        console.log('=== INITIALIZING TABS WITH NEW METHOD ===');
+        
+        // Find all tab sections
+        const tabSections = document.querySelectorAll('.combined-section');
+        console.log('Found tab sections:', tabSections.length);
+        
+        // Use the new section-specific initialization
+        tabSections.forEach((section, index) => {
+            console.log(`Initializing section ${index}:`);
+            initializeTabSection(section);
+        });
+        
+        // Also process any standalone math elements
+        setTimeout(() => {
+            renderMath();
+            processSpecialElements();
+        }, 500);
+        
+        console.log('=== TAB INITIALIZATION COMPLETE ===');
+        
+    } catch (error) {
+        console.error('Error initializing tabs:', error);
+    }
+}
+
 // Call on page load with a small delay to ensure DOM is ready
 setTimeout(() => {
     processExistingMessages();
     loadExistingFeedback();
     updateFAQButtonStates();
+    initializeTabs();
 }, 500);
 
 // Also call when DOM content is loaded
@@ -1773,6 +1841,7 @@ document.addEventListener('DOMContentLoaded', function() {
         processExistingMessages();
         loadExistingFeedback();
         updateFAQButtonStates();
+        initializeTabs();
     }, 100);
 });
 
@@ -1781,12 +1850,48 @@ setTimeout(() => {
     processExistingMessages();
     loadExistingFeedback();
     updateFAQButtonStates();
+    initializeTabs();
 }, 1000);
 
 // Add a manual refresh function for debugging
 window.refreshFeedbackState = function() {
     console.log('Manual refresh of feedback state...');
     loadExistingFeedback();
+};
+
+// Add debugging functions for tabs
+window.debugTabs = function() {
+    console.log('=== TAB DEBUG INFO ===');
+    const tabSections = document.querySelectorAll('.combined-section');
+    console.log('Tab sections found:', tabSections.length);
+    
+    tabSections.forEach((section, sectionIndex) => {
+        console.log(`Section ${sectionIndex}:`);
+        const buttons = section.querySelectorAll('.tab-btn');
+        const contents = section.querySelectorAll('.tab-content');
+        
+        console.log(`  Buttons: ${buttons.length}`);
+        buttons.forEach((btn, i) => {
+            console.log(`    Button ${i}: active=${btn.classList.contains('active')}, text="${btn.textContent}"`);
+        });
+        
+        console.log(`  Contents: ${contents.length}`);
+        contents.forEach((content, i) => {
+            console.log(`    Content ${i}: id="${content.id}", display="${content.style.display}", visible=${content.offsetParent !== null}`);
+        });
+    });
+    
+    const mathElements = document.querySelectorAll('.math-formula');
+    console.log('Math elements found:', mathElements.length);
+    mathElements.forEach((elem, i) => {
+        console.log(`  Math ${i}: processed=${elem.classList.contains('katex-processed')}, formula="${elem.getAttribute('data-formula')}"`);
+    });
+};
+
+// Add manual tab initialization for debugging
+window.reinitializeTabs = function() {
+    console.log('Manual tab reinitialization...');
+    initializeTabs();
 };
 
 // Feedback submission function
@@ -1945,33 +2050,7 @@ async function updateFAQButtonStates() {
 
 // NEW FUNCTIONS FOR RESTRUCTURED LAYOUT
 
-// Toggle code visibility in plot section
-function toggleCode(codeId) {
-    const codeBlock = document.getElementById(codeId);
-    const button = event.target;
-    
-    if (codeBlock.style.display === 'none' || codeBlock.style.display === '') {
-        codeBlock.style.display = 'block';
-        button.textContent = 'Hide Code';
-    } else {
-        codeBlock.style.display = 'none';
-        button.textContent = 'Code';
-    }
-}
-
-// Toggle SQL query visibility in table section
-function toggleSQL(sqlId) {
-    const sqlBlock = document.getElementById(sqlId);
-    const button = event.target;
-    
-    if (sqlBlock.style.display === 'none' || sqlBlock.style.display === '') {
-        sqlBlock.style.display = 'block';
-        button.textContent = 'Hide Query';
-    } else {
-        sqlBlock.style.display = 'none';
-        button.textContent = 'Query';
-    }
-}
+// Note: Toggle functions removed as copy buttons now work directly
 
 // Toggle table expansion (show only top 5 rows vs complete table)
 function toggleTable(tableId) {
@@ -2000,32 +2079,255 @@ function toggleTable(tableId) {
     }
 }
 
-// Switch tabs in combined information section
-function switchTab(tabId) {
+// Initialize tabs for a specific section (fixes interference between multiple sections)
+function initializeTabSection(section) {
+    console.log('Initializing tab section:', section);
+    
+    // Find tab buttons and contents within this specific section
+    const tabButtons = section.querySelectorAll('.tab-btn');
+    const tabContents = section.querySelectorAll('.tab-content');
+    
+    if (tabButtons.length === 0 || tabContents.length === 0) {
+        console.log('No tabs found in section');
+        return;
+    }
+    
     // Hide all tab contents
-    const allTabContents = document.querySelectorAll('.tab-content');
-    allTabContents.forEach(content => {
+    tabContents.forEach(content => {
         content.style.display = 'none';
     });
     
-    // Remove active class from all tab buttons
-    const allTabButtons = document.querySelectorAll('.tab-btn');
-    allTabButtons.forEach(btn => {
+    // Remove active class from all buttons
+    tabButtons.forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Show selected tab content
-    const selectedContent = document.getElementById(tabId);
-    if (selectedContent) {
-        selectedContent.style.display = 'block';
+    // Show first tab and make its button active
+    if (tabContents[0] && tabButtons[0]) {
+        tabContents[0].style.display = 'block';
+        tabButtons[0].classList.add('active');
+        console.log('Activated first tab:', tabButtons[0].textContent);
     }
     
-    // Add active class to clicked button
-    event.target.classList.add('active');
+    // Add click handlers to tab buttons (section-specific)
+    tabButtons.forEach((button, index) => {
+        // Remove any existing onclick handlers to prevent conflicts
+        button.onclick = function(event) {
+            event.preventDefault();
+            switchTabInSection(section, index, event);
+        };
+    });
+}
+
+// Section-specific tab switching (prevents interference between multiple Information sections)
+function switchTabInSection(section, tabIndex, event) {
+    console.log('Switching to tab:', tabIndex, 'in section:', section);
     
-    // Process LaTeX formulas if switching to formulas tab
-    if (tabId === 'formulas') {
-        setTimeout(processSpecialElements, 100);
+    // Find tab buttons and contents within this specific section only
+    const tabButtons = section.querySelectorAll('.tab-btn');
+    const tabContents = section.querySelectorAll('.tab-content');
+    
+    // Hide all tab contents in this section
+    tabContents.forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Remove active class from all tab buttons in this section
+    tabButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content and activate button
+    if (tabContents[tabIndex] && tabButtons[tabIndex]) {
+        tabContents[tabIndex].style.display = 'block';
+        tabButtons[tabIndex].classList.add('active');
+        
+        console.log('Switched to tab:', tabButtons[tabIndex].textContent);
+        
+        // Process LaTeX formulas if switching to formulas tab
+        if (tabButtons[tabIndex].textContent.trim().includes('Formulas')) {
+            setTimeout(() => processSpecialElements(tabContents[tabIndex]), 100);
+        } else {
+            setTimeout(() => renderMath(tabContents[tabIndex]), 100);
+        }
+    }
+}
+
+// Switch tabs in combined information section
+function switchTab(tabId, clickedButton = null) {
+    try {
+        console.log('Switching to tab:', tabId);
+        
+        // Hide all tab contents
+        const allTabContents = document.querySelectorAll('.tab-content');
+        allTabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+        
+        // Remove active class from all tab buttons
+        const allTabButtons = document.querySelectorAll('.tab-btn');
+        allTabButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        const selectedContent = document.getElementById(tabId);
+        if (selectedContent) {
+            selectedContent.style.display = 'block';
+            console.log('Showed tab content for:', tabId);
+        } else {
+            console.error('Tab content not found for:', tabId);
+            return;
+        }
+        
+        // Add active class to clicked button
+        const buttonToActivate = clickedButton || event?.target || document.querySelector(`[onclick*="${tabId}"]`);
+        if (buttonToActivate) {
+            buttonToActivate.classList.add('active');
+            console.log('Activated button for tab:', tabId);
+        }
+        
+        // Process content based on tab type
+        setTimeout(() => {
+            if (tabId === 'formulas') {
+                console.log('Processing formulas tab...');
+                processSpecialElements();
+            } else if (tabId === 'definitions' || tabId === 'steps') {
+                console.log('Processing text content for tab:', tabId);
+                // Ensure any markdown or special content is processed
+                renderMath();
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('Error in switchTab:', error);
+    }
+}
+
+// Process special elements like LaTeX formulas
+function processSpecialElements() {
+    // Check if KaTeX is available
+    if (typeof katex === 'undefined') {
+        console.error('KaTeX is not loaded!');
+        return;
+    }
+    
+    console.log('Processing special elements (formulas)...');
+    
+    // Handle LaTeX math formulas
+    const mathElements = document.querySelectorAll('.math-formula');
+    console.log(`Found ${mathElements.length} math elements to process`);
+    
+    mathElements.forEach((elem, index) => {
+        const formula = elem.getAttribute('data-formula');
+        if (formula && !elem.classList.contains('katex-processed')) {
+            try {
+                console.log(`Rendering formula ${index + 1}:`, formula);
+                
+                // Clean the formula - remove any existing $$ wrappers
+                let cleanFormula = formula.replace(/^\$\$/, '').replace(/\$\$$/, '');
+                
+                const rendered = katex.renderToString(cleanFormula, { 
+                    displayMode: true,
+                    throwOnError: false,
+                    strict: false
+                });
+                
+                elem.innerHTML = rendered;
+                elem.classList.add('katex-processed');
+                console.log(`Successfully rendered formula ${index + 1}`);
+                
+            } catch (error) {
+                console.error(`Error rendering formula ${index + 1}:`, error);
+                // Fallback: show the raw formula
+                elem.innerHTML = `<pre><code class="language-latex">${formula}</code></pre>`;
+            }
+        }
+    });
+}
+
+// Render math formulas in existing content
+function renderMath() {
+    // Check if KaTeX is available
+    if (typeof katex === 'undefined') {
+        console.error('KaTeX is not loaded for renderMath!');
+        return;
+    }
+    
+    console.log('Rendering math in existing content...');
+    
+    // Process math formulas in the current visible content
+    const mathElements = document.querySelectorAll('.math-formula:not(.katex-processed)');
+    console.log(`Found ${mathElements.length} unprocessed math elements`);
+    
+    mathElements.forEach((elem, index) => {
+        const formula = elem.getAttribute('data-formula');
+        if (formula) {
+            try {
+                console.log(`Rendering existing formula ${index + 1}:`, formula);
+                
+                // Clean the formula
+                let cleanFormula = formula.replace(/^\$\$/, '').replace(/\$\$$/, '');
+                
+                const rendered = katex.renderToString(cleanFormula, { 
+                    displayMode: true,
+                    throwOnError: false,
+                    strict: false
+                });
+                
+                elem.innerHTML = rendered;
+                elem.classList.add('katex-processed');
+                console.log(`Successfully rendered existing formula ${index + 1}`);
+                
+            } catch (error) {
+                console.error(`Error rendering existing formula ${index + 1}:`, error);
+                elem.innerHTML = `<pre><code class="language-latex">${formula}</code></pre>`;
+            }
+        }
+    });
+    
+    // Also process any inline LaTeX that might exist
+    processInlineMath();
+}
+
+// Process inline math formulas
+function processInlineMath() {
+    // Find any remaining $$ wrapped content that wasn't processed
+    const textNodes = document.evaluate(
+        '//text()[contains(., "$$")]',
+        document.body,
+        null,
+        XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+        null
+    );
+    
+    for (let i = 0; i < textNodes.snapshotLength; i++) {
+        const node = textNodes.snapshotItem(i);
+        if (node.nodeValue && node.nodeValue.includes('$$')) {
+            try {
+                const parent = node.parentNode;
+                if (parent && !parent.classList.contains('katex-processed')) {
+                    const text = node.nodeValue;
+                    const processed = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+                        try {
+                            return katex.renderToString(formula, { displayMode: true });
+                        } catch (error) {
+                            console.log('Inline KaTeX error:', error);
+                            return match; // Return original if error
+                        }
+                    });
+                    
+                    if (processed !== text) {
+                        const wrapper = document.createElement('span');
+                        wrapper.innerHTML = processed;
+                        wrapper.classList.add('katex-processed');
+                        parent.replaceChild(wrapper, node);
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing inline math:', error);
+            }
+        }
     }
 }
 

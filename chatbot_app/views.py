@@ -238,48 +238,8 @@ def dify_proxy(request):
         python_blocks = extract_python_blocks(full_reply)
         enhanced_reply = full_reply
         
-        for i, script_content in enumerate(python_blocks):
-            try:
-                result = execute_python_script(script_content, session_id)
-                if result['success']:
-                    # Insert plot display right after the Python code block
-                    plot_html = f'\n\n<div class="auto-plot-display">\n<div class="plot-title">Generated Plot {i+1}</div>\n<div class="plot-container">\n<img src="{result["plot_url"]}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">\n<button class="download-plot-btn" onclick="downloadPlot(\'{result["plot_url"]}\', \'{result["plot_filename"]}\')">📥 Download Plot</button>\n</div>\n</div>\n\n'
-                    
-                    # Find the exact Python code block and insert plot after it
-                    code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                    if code_block_start != -1:
-                        # Find the end of this specific code block
-                        code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                        enhanced_reply = enhanced_reply[:code_block_end] + plot_html + enhanced_reply[code_block_end:]
-                    else:
-                        # Fallback: append at the end
-                        enhanced_reply += plot_html
-                        
-                else:
-                    # Insert error message after the Python code block
-                    error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {result.get("error", "Unknown error")}</div>\n</div>\n\n'
-                    
-                    code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                    if code_block_start != -1:
-                        # Find the end of this specific code block
-                        code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                        enhanced_reply = enhanced_reply[:code_block_end] + error_html + enhanced_reply[code_block_end:]
-                    else:
-                        # Fallback: append at the end
-                        enhanced_reply += error_html
-                        
-            except Exception as e:
-                # Insert error message after the Python code block
-                error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {str(e)}</div>\n</div>\n\n'
-                
-                code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                if code_block_start != -1:
-                    # Find the end of this specific code block
-                    code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                    enhanced_reply = enhanced_reply[:code_block_end] + error_html + enhanced_reply[code_block_end:]
-                else:
-                    # Fallback: append at the end
-                    enhanced_reply += error_html
+        # Auto-execution disabled for clean UI - code available via copy buttons only
+        pass
         
         # Save bot reply to DB
         if full_reply:
@@ -471,48 +431,8 @@ def process_streamed_response(request):
             # Check for Python code blocks and execute them automatically
             python_blocks = extract_python_blocks(full_reply)
             
-            for i, script_content in enumerate(python_blocks):
-                try:
-                    result = execute_python_script(script_content, session_id)
-                    if result['success']:
-                        # Insert plot display right after the Python code block
-                        plot_html = f'\n\n<div class="auto-plot-display">\n<div class="plot-title">Generated Plot {i+1}</div>\n<div class="plot-container">\n<img src="{result["plot_url"]}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">\n<button class="download-plot-btn" onclick="downloadPlot(\'{result["plot_url"]}\', \'{result["plot_filename"]}\')">📥 Download Plot</button>\n</div>\n</div>\n\n'
-                        
-                        # Find the exact Python code block and insert plot after it
-                        code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                        if code_block_start != -1:
-                            # Find the end of this specific code block
-                            code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                            enhanced_reply = enhanced_reply[:code_block_end] + plot_html + enhanced_reply[code_block_end:]
-                        else:
-                            # Fallback: append at the end
-                            enhanced_reply += plot_html
-                            
-                    else:
-                        # Insert error message after the Python code block
-                        error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {result.get("error", "Unknown error")}</div>\n</div>\n\n'
-                        
-                        code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                        if code_block_start != -1:
-                            # Find the end of this specific code block
-                            code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                            enhanced_reply = enhanced_reply[:code_block_end] + error_html + enhanced_reply[code_block_end:]
-                        else:
-                            # Fallback: append at the end
-                            enhanced_reply += error_html
-                            
-                except Exception as e:
-                    # Insert error message after the Python code block
-                    error_html = f'\n\n<div class="plot-error">\n<div class="error">❌ Plot Generation Failed: {str(e)}</div>\n</div>\n\n'
-                    
-                    code_block_start = enhanced_reply.find(f'```python\n{script_content}\n```')
-                    if code_block_start != -1:
-                        # Find the end of this specific code block
-                        code_block_end = code_block_start + len(f'```python\n{script_content}\n```')
-                        enhanced_reply = enhanced_reply[:code_block_end] + error_html + enhanced_reply[code_block_end:]
-                    else:
-                        # Fallback: append at the end
-                        enhanced_reply += error_html
+            # Auto-execution disabled for clean UI - code available via copy buttons only
+            pass
         
         # Save bot reply to DB
         if enhanced_reply:
@@ -804,12 +724,15 @@ def format_json_response(json_data, session_id):
                     <img src="{result['plot_url']}" alt="Generated Plot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                 </div>
                 """
+                # Collapsible code bar with toggle and copy button
                 code_button_html = f"""
-                <button class="code-toggle-btn" onclick="toggleCode('{python_id}')">Hide Code</button>
-                <div class="code-block" id="{python_id}" style="display: block;">
+                <div class="code-toggle-container">
+                    <button class="code-toggle-btn" onclick="toggleCodeSection('{python_id}', this)">Show Code</button>
+                </div>
+                <div class="code-block" id="{python_id}" style="display: none;">
                     <div class="code-header">
-                        <span class="code-language">python</span>
-                        <button class="code-copy-btn" onclick="copyToClipboard(this, '{python_id}-content')">📋 Copy</button>
+                        <span class="code-language">Plot Code</span>
+                        <button class="code-copy-btn" onclick="copyToClipboard(this, '{python_id}-content')">Copy</button>
                     </div>
                     <div class="code-content">
                         <pre><code class="language-python" id="{python_id}-content">{python_code}</code></pre>
@@ -866,12 +789,15 @@ def format_json_response(json_data, session_id):
         # SQL Query button (if available)
         sql_button_html = ""
         if json_data.get('sql_query'):
+            # Collapsible SQL code bar with toggle and copy button
             sql_button_html = f"""
-            <button class="sql-toggle-btn" onclick="toggleSQL('{sql_id}')">Hide Query</button>
-            <div class="code-block" id="{sql_id}" style="display: block;">
+            <div class="code-toggle-container">
+                <button class="code-toggle-btn" onclick="toggleCodeSection('{sql_id}', this)">Show Query</button>
+            </div>
+            <div class="code-block" id="{sql_id}" style="display: none;">
                 <div class="code-header">
-                    <span class="code-language">sql</span>
-                    <button class="code-copy-btn" onclick="copyToClipboard(this, '{sql_id}-content')">📋 Copy</button>
+                    <span class="code-language">SQL Query</span>
+                    <button class="code-copy-btn" onclick="copyToClipboard(this, '{sql_id}-content')">Copy</button>
                 </div>
                 <div class="code-content">
                     <pre><code class="language-sql" id="{sql_id}-content">{json_data['sql_query']}</code></pre>
