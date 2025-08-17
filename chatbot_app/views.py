@@ -372,13 +372,56 @@ def dify_streaming_proxy(request):
             
             print(f"DEBUG: Final reply: {full_reply}")
             
-            # Save conversation_id if extracted
-            if conversation_id_extracted and not conversation_id:
-                session.conversation_id = conversation_id_extracted
-                session.save()
+            # Sentinel Token Validation
+            validation_passed = False
+            error_message_for_log = ""
             
-            # Signal that streaming is complete
-            yield f"data: {json.dumps({'type': 'streaming_complete', 'full_reply': full_reply})}\n\n"
+            try:
+                stripped_reply = full_reply.strip()
+                # A valid response is either a non-JSON string (clarification) 
+                # or a complete JSON object with our sentinel token.
+                if not stripped_reply.startswith('{'):
+                    # Assumed to be a valid non-JSON response (e.g., clarification question).
+                    validation_passed = True
+                else:
+                    # It looks like JSON, so it must be valid and contain the sentinel.
+                    if stripped_reply.endswith('}'):
+                        data = json.loads(stripped_reply)
+                        if data.get("status") == "complete":
+                            validation_passed = True
+                        else:
+                            error_message_for_log = "Data integrity check failed: Status is not 'complete'."
+                            print(f"DEBUG: Sentinel token check failed. 'status' key not found or value is not 'complete'.")
+                    else:
+                        # Does not end with '}' - clearly truncated.
+                        error_message_for_log = "Response appears to be a truncated JSON object."
+                        print("DEBUG: Validation failed because response starts with '{' but does not end with '}'.")
+
+            except json.JSONDecodeError as e:
+                error_message_for_log = f"Response is not a valid JSON object. Error: {e}"
+                print(f"DEBUG: JSON validation failed. Error: {e}")
+                print(f"DEBUG: Truncated/corrupted JSON: {full_reply[:500]}...")
+            except Exception as e:
+                error_message_for_log = f"An unexpected error occurred during response validation: {str(e)}"
+                print(f"DEBUG: Unexpected validation error: {e}")
+
+            if validation_passed:
+                # Save conversation_id if extracted
+                if conversation_id_extracted and not conversation_id:
+                    session.conversation_id = conversation_id_extracted
+                    session.save()
+                
+                # Signal that streaming is complete
+                yield f"data: {json.dumps({'type': 'streaming_complete', 'full_reply': full_reply})}\n\n"
+            else:
+                # Send a specific, user-friendly error message to the frontend.
+                user_facing_error = (
+                    "The analysis was interrupted, possibly due to network instability, "
+                    "resulting in an incomplete response from the AI agent. "
+                    "Please try submitting your question again."
+                )
+                yield f"data: {json.dumps({'type': 'error', 'error': user_facing_error})}\n\n"
+                print(f"DEBUG: Yielding validation error to frontend. Internal reason: {error_message_for_log}")
             
         except Exception as e:
             error_msg = f"Error: {str(e)}"
@@ -422,9 +465,12 @@ def process_streamed_response(request):
                     ['definition', 'math_formula', 'steps', 'sql_query', 'table_markdown', 'summary', 'python_code']):
                     is_json_response = True
                     enhanced_reply = format_json_response(json_response, session_id)
-        except (json.JSONDecodeError, TypeError, ValueError):
-            # Not a JSON response, continue with normal processing
-            pass
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            # If JSON parsing fails, log the error and treat it as a non-JSON response
+            print(f"DEBUG: JSON parsing failed for full_reply. Error: {e}")
+            print(f"DEBUG: full_reply content: {full_reply[:500]}...") # Log the problematic part
+            is_json_response = False
+            enhanced_reply = full_reply # Keep the original reply to be saved in DB and processed as markdown
         
         if not is_json_response:
             # Original logic for non-JSON responses
