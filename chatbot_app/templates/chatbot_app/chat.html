@@ -196,8 +196,8 @@
     }
     
     .faq-btn {
-        background: #C8C2B8;
-        color: #140F0F;
+        background: #FF4646;
+        color: #FDFDF8;
         border: none;
         padding: 8px 12px;
         border-radius: 4px;
@@ -209,7 +209,7 @@
     }
     
     .faq-btn:hover {
-        background: #140F0F;
+        background: #E63946;
         color: #FDFDF8;
         transform: none;
     }
@@ -1977,7 +1977,7 @@ async function addToFAQ(sessionId, messageId, event) {
             } else {
                 clickedBtn.classList.remove('in-faq');
                 clickedBtn.textContent = 'Add to FAQ';
-                clickedBtn.style.background = '#38a169';
+                clickedBtn.style.background = '';
             }
             
             // Reset button after 3 seconds
@@ -1994,7 +1994,7 @@ async function addToFAQ(sessionId, messageId, event) {
             // Reset button after 3 seconds
             setTimeout(() => {
                 clickedBtn.textContent = originalText;
-                clickedBtn.style.background = isInFAQ ? '#e53e3e' : '#38a169';
+                clickedBtn.style.background = isInFAQ ? '#e53e3e' : '';
             }, 3000);
         }
     } catch (error) {
@@ -2008,7 +2008,7 @@ async function addToFAQ(sessionId, messageId, event) {
         // Reset button after 3 seconds
         setTimeout(() => {
             clickedBtn.textContent = originalText;
-            clickedBtn.style.background = clickedBtn.classList.contains('in-faq') ? '#e53e3e' : '#38a169';
+            clickedBtn.style.background = clickedBtn.classList.contains('in-faq') ? '#e53e3e' : '';
         }, 3000);
     }
 }
@@ -2042,7 +2042,7 @@ async function updateFAQButtonStates() {
             } else {
                 btn.classList.remove('in-faq');
                 btn.textContent = 'Add to FAQ';
-                btn.style.background = '#38a169';
+                btn.style.background = '';
             }
         }
     }

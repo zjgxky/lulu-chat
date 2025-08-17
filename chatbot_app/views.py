@@ -334,109 +334,122 @@ def dify_streaming_proxy(request):
         session.save()
 
     def stream_response():
-        try:
-            # Call Dify API with streaming mode
-            dify_response = post_to_dify(
-                query=enhanced_message,
-                user_id=user_id,
-                conversation_id=conversation_id,
-                files=files,
-                response_mode="streaming"
-            )
-            
-            # Handle streaming response from Dify
-            full_reply = ""
-            conversation_id_extracted = None
-            
-            # Process the streaming response
-            print(f"DEBUG: Processing streaming response...")
-            for chunk in dify_response.iter_content(chunk_size=1024):
-                if chunk:
-                    chunk_str = chunk.decode('utf-8')
-                    print(f"DEBUG: Chunk: {chunk_str[:100]}...")
-                    lines = chunk_str.split('\n')
-                    
-                    for line in lines:
-                        if line.startswith('data: '):
-                            try:
-                                data = json.loads(line[6:])
-                                print(f"DEBUG: Parsed: {data}")
-                                if data.get('event') == 'agent_message':
-                                    if 'answer' in data:
-                                        answer_chunk = data['answer']
-                                        full_reply += answer_chunk
-                                        print(f"DEBUG: Added: {answer_chunk}")
-                                        # Stream this chunk to frontend
-                                        yield f"data: {json.dumps({'type': 'chunk', 'content': answer_chunk})}\n\n"
-                                elif data.get('event') == 'message_end':
-                                    # Extract conversation_id if available
-                                    if 'conversation_id' in data and not conversation_id:
-                                        conversation_id_extracted = data['conversation_id']
-                                        print(f"DEBUG: Conversation ID: {conversation_id_extracted}")
-                            except json.JSONDecodeError as e:
-                                print(f"DEBUG: JSON error: {e}")
-                                continue
-            
-            print(f"DEBUG: Final reply: {full_reply}")
-            
-            # Sentinel Token Validation
-            validation_passed = False
-            error_message_for_log = ""
-            
+        max_retries = 1  # Initial attempt + 1 retry
+        for attempt in range(max_retries + 1):
             try:
-                stripped_reply = full_reply.strip()
-                # A valid response is either a non-JSON string (clarification) 
-                # or a complete JSON object with our sentinel token.
-                if not stripped_reply.startswith('{'):
-                    # Assumed to be a valid non-JSON response (e.g., clarification question).
-                    validation_passed = True
-                else:
-                    # It looks like JSON, so it must be valid and contain the sentinel.
-                    if stripped_reply.endswith('}'):
-                        data = json.loads(stripped_reply)
-                        if data.get("status") == "complete":
-                            validation_passed = True
-                        else:
-                            error_message_for_log = "Data integrity check failed: Status is not 'complete'."
-                            print(f"DEBUG: Sentinel token check failed. 'status' key not found or value is not 'complete'.")
-                    else:
-                        # Does not end with '}' - clearly truncated.
-                        error_message_for_log = "Response appears to be a truncated JSON object."
-                        print("DEBUG: Validation failed because response starts with '{' but does not end with '}'.")
-
-            except json.JSONDecodeError as e:
-                error_message_for_log = f"Response is not a valid JSON object. Error: {e}"
-                print(f"DEBUG: JSON validation failed. Error: {e}")
-                print(f"DEBUG: Truncated/corrupted JSON: {full_reply[:500]}...")
-            except Exception as e:
-                error_message_for_log = f"An unexpected error occurred during response validation: {str(e)}"
-                print(f"DEBUG: Unexpected validation error: {e}")
-
-            if validation_passed:
-                # Save conversation_id if extracted
-                if conversation_id_extracted and not conversation_id:
-                    session.conversation_id = conversation_id_extracted
-                    session.save()
-                
-                # Signal that streaming is complete
-                yield f"data: {json.dumps({'type': 'streaming_complete', 'full_reply': full_reply})}\n\n"
-            else:
-                # Send a specific, user-friendly error message to the frontend.
-                user_facing_error = (
-                    "The analysis was interrupted, possibly due to network instability, "
-                    "resulting in an incomplete response from the AI agent. "
-                    "Please try submitting your question again."
+                # Call Dify API with streaming mode
+                dify_response = post_to_dify(
+                    query=enhanced_message,
+                    user_id=user_id,
+                    conversation_id=conversation_id,
+                    files=files,
+                    response_mode="streaming"
                 )
-                yield f"data: {json.dumps({'type': 'error', 'error': user_facing_error})}\n\n"
-                print(f"DEBUG: Yielding validation error to frontend. Internal reason: {error_message_for_log}")
-            
-        except Exception as e:
-            error_msg = f"Error: {str(e)}"
-            yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
+                
+                # Handle streaming response from Dify
+                full_reply = ""
+                conversation_id_extracted = None
+                
+                # Process the streaming response
+                print(f"DEBUG: [Attempt {attempt + 1}/{max_retries + 1}] Processing streaming response...")
+                for chunk in dify_response.iter_content(chunk_size=1024):
+                    if chunk:
+                        chunk_str = chunk.decode('utf-8')
+                        print(f"DEBUG: Chunk: {chunk_str[:100]}...")
+                        lines = chunk_str.split('\n')
+                        
+                        for line in lines:
+                            if line.startswith('data: '):
+                                try:
+                                    data = json.loads(line[6:])
+                                    print(f"DEBUG: Parsed: {data}")
+                                    if data.get('event') == 'agent_message':
+                                        if 'answer' in data:
+                                            answer_chunk = data['answer']
+                                            full_reply += answer_chunk
+                                            print(f"DEBUG: Added: {answer_chunk}")
+                                            # Stream this chunk to frontend
+                                            yield f"data: {json.dumps({'type': 'chunk', 'content': answer_chunk})}\n\n"
+                                    elif data.get('event') == 'message_end':
+                                        # Extract conversation_id if available
+                                        if 'conversation_id' in data and not conversation_id:
+                                            conversation_id_extracted = data['conversation_id']
+                                            print(f"DEBUG: Conversation ID: {conversation_id_extracted}")
+                                except json.JSONDecodeError as e:
+                                    print(f"DEBUG: JSON error: {e}")
+                                    continue
+                
+                print(f"DEBUG: Final reply from attempt {attempt + 1}: {full_reply}")
+                
+                # Sentinel Token Validation
+                validation_passed = False
+                error_message_for_log = ""
+                
+                try:
+                    stripped_reply = full_reply.strip()
+                    if not stripped_reply:
+                        error_message_for_log = "Response was empty after streaming."
+                        print("DEBUG: Validation failed because the final response string is empty.")
+                    elif not stripped_reply.startswith('{'):
+                        validation_passed = True
+                    else:
+                        if stripped_reply.endswith('}'):
+                            data = json.loads(stripped_reply)
+                            if data.get("status") == "complete":
+                                validation_passed = True
+                            else:
+                                error_message_for_log = "Data integrity check failed: Status is not 'complete'."
+                                print(f"DEBUG: Sentinel token check failed. 'status' key not found or value is not 'complete'.")
+                        else:
+                            error_message_for_log = "Response appears to be a truncated JSON object."
+                            print("DEBUG: Validation failed because response starts with '{' but does not end with '}'.")
+
+                except json.JSONDecodeError as e:
+                    error_message_for_log = f"Response is not a valid JSON object. Error: {e}"
+                    print(f"DEBUG: JSON validation failed. Error: {e}")
+                    print(f"DEBUG: Truncated/corrupted JSON: {full_reply[:500]}...")
+                except Exception as e:
+                    error_message_for_log = f"An unexpected error occurred during response validation: {str(e)}"
+                    print(f"DEBUG: Unexpected validation error: {e}")
+
+                if validation_passed:
+                    if conversation_id_extracted and not conversation_id:
+                        session.conversation_id = conversation_id_extracted
+                        session.save()
+                    yield f"data: {json.dumps({'type': 'streaming_complete', 'full_reply': full_reply})}\n\n"
+                    return # Exit loop on success
+                else:
+                    # Validation failed, check if we can retry
+                    if attempt < max_retries:
+                        print(f"DEBUG: [Attempt {attempt + 1}] Failed validation. Retrying... Reason: {error_message_for_log}")
+                        time.sleep(1) # Wait 1 second before retrying
+                        continue # Go to the next iteration of the loop
+                    else:
+                        # This was the last attempt, send error to user
+                        user_facing_error = (
+                            "The analysis was interrupted, possibly due to network instability, "
+                            "resulting in an incomplete response from the AI agent. "
+                            "Please try submitting your question again."
+                        )
+                        yield f"data: {json.dumps({'type': 'error', 'error': user_facing_error})}\n\n"
+                        print(f"DEBUG: Yielding validation error to frontend after all retries. Internal reason: {error_message_for_log}")
+                        return
+
+            except Exception as e:
+                # This catches broader errors like requests.exceptions.ConnectionError
+                print(f"DEBUG: [Attempt {attempt + 1}] An exception occurred: {e}")
+                if attempt < max_retries:
+                    print("DEBUG: Retrying after exception...")
+                    time.sleep(1)
+                    continue
+                else:
+                    error_msg = f"An unrecoverable error occurred after multiple retries: {str(e)}"
+                    yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
+                    return
 
     return StreamingHttpResponse(
         stream_response(),
-        content_type='text/plain'
+        content_type='text/event-stream'
     )
 
 
