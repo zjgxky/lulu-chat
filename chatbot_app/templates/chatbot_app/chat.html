@@ -2154,24 +2154,26 @@ function switchTabInSection(section, tabIndex, event) {
 }
 
 // Switch tabs in combined information section
-function switchTab(tabId, clickedButton = null) {
+function switchTab(tabId, clickedButton = null, messageId = null) {
     try {
         console.log('Switching to tab:', tabId);
         
+        const scope = messageId ? document.querySelector(`[data-message-id='${messageId}']`) : document;
+
         // Hide all tab contents
-        const allTabContents = document.querySelectorAll('.tab-content');
+        const allTabContents = scope.querySelectorAll('.tab-content');
         allTabContents.forEach(content => {
             content.style.display = 'none';
         });
         
         // Remove active class from all tab buttons
-        const allTabButtons = document.querySelectorAll('.tab-btn');
+        const allTabButtons = scope.querySelectorAll('.tab-btn');
         allTabButtons.forEach(btn => {
             btn.classList.remove('active');
         });
         
         // Show selected tab content
-        const selectedContent = document.getElementById(tabId);
+        const selectedContent = scope.querySelector(`#${tabId}`);
         if (selectedContent) {
             selectedContent.style.display = 'block';
             console.log('Showed tab content for:', tabId);
@@ -2181,7 +2183,7 @@ function switchTab(tabId, clickedButton = null) {
         }
         
         // Add active class to clicked button
-        const buttonToActivate = clickedButton || event?.target || document.querySelector(`[onclick*="${tabId}"]`);
+        const buttonToActivate = clickedButton || event?.target || scope.querySelector(`[onclick*="${tabId}"]`);
         if (buttonToActivate) {
             buttonToActivate.classList.add('active');
             console.log('Activated button for tab:', tabId);

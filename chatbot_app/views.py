@@ -159,7 +159,11 @@ def dify_proxy(request):
     ChatMessage.objects.create(session=session, sender="user", text=user_message)
     
     # Append the instruction to the message sent to Dify
-    enhanced_message = user_message + " Don't simply provide me the steps or sample data or sample code. DO IT FOR ME."
+    enhanced_message = (
+    f"[USER_QUESTION]: {user_message}\n\n"
+    "[OUTPUT_REQUIREMENT]: Please follow the Decision Flow strictly.\n"
+    )
+
     
     # Update session title with first message if no title exists
     if not session.title:
@@ -317,7 +321,10 @@ def dify_streaming_proxy(request):
     ChatMessage.objects.create(session=session, sender="user", text=user_message)
     
     # Append the instruction to the message sent to Dify
-    enhanced_message = user_message + " Don't simply provide me the steps or sample data or sample code. DO IT FOR ME."
+    enhanced_message = (
+    f"[USER_QUESTION]: {user_message}\n\n"
+    "[OUTPUT_REQUIREMENT]: Please follow the Decision Flow strictly.\n"
+    )
     
     # Update session title with first message if no title exists
     if not session.title:
@@ -464,7 +471,8 @@ def process_streamed_response(request):
                 if isinstance(json_response, dict) and any(key in json_response for key in 
                     ['definition', 'math_formula', 'steps', 'sql_query', 'table_markdown', 'summary', 'python_code']):
                     is_json_response = True
-                    enhanced_reply = format_json_response(json_response, session_id)
+                    message_id = f"msg-{uuid.uuid4().hex[:8]}"
+                    enhanced_reply = format_json_response(json_response, session_id, message_id)
         except (json.JSONDecodeError, TypeError, ValueError) as e:
             # If JSON parsing fails, log the error and treat it as a non-JSON response
             print(f"DEBUG: JSON parsing failed for full_reply. Error: {e}")
@@ -735,7 +743,7 @@ def extract_python_blocks(text):
     matches = re.findall(pattern, text)
     return matches
 
-def format_json_response(json_data, session_id):
+def format_json_response(json_data, session_id, message_id):
     """Format the JSON response from the agent into a readable HTML structure"""
     html_parts = []
     
@@ -939,7 +947,7 @@ def format_json_response(json_data, session_id):
         
         for i, (tab_id, tab_title, tab_content) in enumerate(combined_sections):
             active_class = "active" if i == 0 else ""
-            tabs_html += f'<button class="tab-btn {active_class}" onclick="switchTab(\'{tab_id}\')">{tab_title}</button>\n'
+            tabs_html += f'<button class="tab-btn {active_class}" onclick="switchTab(\'{tab_id}\', this, \'{message_id}\')">{tab_title}</button>\n'
             
             display_style = "block" if i == 0 else "none"
             content_html += f'''
@@ -964,7 +972,7 @@ def format_json_response(json_data, session_id):
     
     # Combine all sections
     final_html = f"""
-    <div class="json-response-container">
+    <div class="json-response-container" data-message-id="{message_id}">
         {''.join(html_parts)}
     </div>
     """
@@ -1393,7 +1401,8 @@ def test_formatting_view(request):
     
     # Create a temporary session for testing
     session = ChatSession.objects.create(title="Test JSON Formatting - New Structure")
-    formatted_html = format_json_response(test_json, session.id)
+    message_id = f"msg-test-{uuid.uuid4().hex[:8]}"
+    formatted_html = format_json_response(test_json, session.id, message_id)
     
     return JsonResponse({
         "reply": formatted_html,
