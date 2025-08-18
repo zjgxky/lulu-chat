@@ -52,7 +52,7 @@
         margin-right: auto;
         border-bottom-left-radius: 4px;
         border: 1px solid #C8C2B8;
-        max-width: 70%;
+        width: 70%;
     }
     
     .user {
@@ -561,11 +561,12 @@
     .table-container td {
         padding: 12px;
         border-bottom: 1px solid #e5e7eb;
+        border-right: 1px solid #e2e8f0;
         color: #4b5563;
     }
     
-    .table-container tr:last-child td {
-        border-bottom: none;
+    .table-container td:last-child {
+        border-right: none;
     }
     
     .table-container tr:hover {
@@ -975,6 +976,127 @@
     .error-message summary:hover {
         color: #dc2626;
     }
+
+    /* Status Bar Styles */
+    .status-bar {
+        background: #FDFDF8;
+        border-top: 1px solid #C8C2B8;
+        padding: 12px 24px;
+        transition: all 0.4s ease-in-out;
+        max-height: 500px; /* for animation */
+        overflow: hidden;
+    }
+
+    .status-bar.hidden {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-width: 0;
+        opacity: 0;
+    }
+
+    .status-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    #status-text {
+        font-weight: 500;
+        color: #2B1F1E;
+        font-style: italic;
+    }
+
+    #toggle-stream-btn {
+        background: none;
+        border: 1px solid #7F746C;
+        color: #2B1F1E;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+    }
+
+    #toggle-stream-btn:hover {
+        background: #EFEEEC;
+    }
+
+    .raw-stream-container {
+        margin: 12px auto 0 auto;
+        max-width: 800px;
+        background: #140F0F;
+        color: #FDFDF8;
+        padding: 8px;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.85rem;
+    }
+
+    .raw-stream-container pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    /* In-Chat Status Indicator Styles */
+    .status-indicator {
+        background: #EFEEEC;
+        color: #140F0F;
+        border: 1px solid #C8C2B8;
+        padding: 8px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        border-bottom-left-radius: 4px;
+    }
+
+    #status-text {
+        font-weight: 500;
+        font-style: italic;
+    }
+
+    #toggle-stream-btn {
+        background: none;
+        border: 1px solid #7F746C;
+        color: #2B1F1E;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        margin-left: 16px;
+        white-space: nowrap;
+    }
+
+    #toggle-stream-btn:hover {
+        background: #E0DED9;
+    }
+
+    .raw-stream-container {
+        margin-top: 12px;
+        background: #140F0F;
+        color: #FDFDF8;
+        padding: 8px;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.85rem;
+        border: 1px solid #2B1F1E;
+    }
+
+    .raw-stream-container pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
 </style>
 
 <div class="chat-container">
@@ -1015,6 +1137,16 @@
         {% endif %}
     </div>
     
+    <div class="status-bar hidden" id="status-bar">
+        <div class="status-content">
+            <span id="status-text"></span>
+            <button id="toggle-stream-btn" style="display: none;">Show Stream</button>
+        </div>
+        <div class="raw-stream-container" id="raw-stream-container" style="display: none;">
+            <pre><code id="raw-stream-content"></code></pre>
+        </div>
+    </div>
+
     <div class="chat-input-container">
         <form class="chat-form" id="chat-form">
             <input type="text" 
@@ -1047,6 +1179,11 @@ const chatForm = document.getElementById('chat-form');
 const chatMessages = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
 const sessionId = "{{ current_session.id }}";
+const statusBar = document.getElementById('status-bar');
+const statusText = document.getElementById('status-text');
+const toggleStreamBtn = document.getElementById('toggle-stream-btn');
+const rawStreamContainer = document.getElementById('raw-stream-container');
+const rawStreamContent = document.getElementById('raw-stream-content');
 
 // Auto-scroll to bottom
 function scrollToBottom() {
@@ -1073,13 +1210,17 @@ chatForm.onsubmit = async function(e) {
     userInput.value = '';
     scrollToBottom();
     
-    // Show streaming message from bot
+    // Show streaming message from bot, which will act as the status indicator
     const streamingId = `streaming-${Date.now()}`;
     chatMessages.innerHTML += `
         <div class="message-container">
             <div class="message message-bot" id="${streamingId}">
-                <div class="message-content">
-                    <div class="streaming-content"></div>
+                <div class="status-indicator">
+                    <span id="status-text">I am thinking...</span>
+                    <button id="toggle-stream-btn" style="display: none;">Show Stream</button>
+                </div>
+                <div class="raw-stream-container" id="raw-stream-container" style="display: none;">
+                    <pre><code id="raw-stream-content"></code></pre>
                 </div>
             </div>
         </div>
@@ -1109,7 +1250,23 @@ chatForm.onsubmit = async function(e) {
         const streamingElem = document.getElementById(streamingId);
         if (!streamingElem) return;
         
-        const streamingContent = streamingElem.querySelector('.streaming-content');
+        const statusText = streamingElem.querySelector('#status-text');
+        const toggleStreamBtn = streamingElem.querySelector('#toggle-stream-btn');
+        const rawStreamContainer = streamingElem.querySelector('#raw-stream-container');
+        const rawStreamContent = streamingElem.querySelector('#raw-stream-content');
+        
+        toggleStreamBtn.onclick = function() {
+            const isHidden = rawStreamContainer.style.display === 'none';
+            if (isHidden) {
+                rawStreamContainer.style.display = 'block';
+                toggleStreamBtn.textContent = 'Hide Stream';
+            } else {
+                rawStreamContainer.style.display = 'none';
+                toggleStreamBtn.textContent = 'Show Stream';
+            }
+            scrollToBottom();
+        };
+
         let fullReply = "";
         let hasError = false;
         
@@ -1122,6 +1279,17 @@ chatForm.onsubmit = async function(e) {
             if (done) break;
             
             const chunk = decoder.decode(value);
+
+            // Update status bar
+            if (statusText.textContent === 'I am thinking...') {
+                statusText.textContent = 'Generating the answer...';
+                toggleStreamBtn.style.display = 'inline-block';
+            }
+            rawStreamContent.textContent += chunk;
+            if (rawStreamContainer.style.display === 'block') {
+                rawStreamContainer.scrollTop = rawStreamContainer.scrollHeight;
+            }
+
             const lines = chunk.split('\n');
             
             for (const line of lines) {
@@ -1130,10 +1298,10 @@ chatForm.onsubmit = async function(e) {
                         const data = JSON.parse(line.slice(6));
                         
                         if (data.type === 'chunk') {
-                            // Stream the chunk to the UI
-                            streamingContent.innerHTML += data.content;
+                            // Stream the chunk to the UI - NO LONGER RENDERED, ONLY FOR RAW VIEW
+                            // streamingContent.innerHTML += data.content;
                             fullReply += data.content;
-                            scrollToBottom();
+                            // scrollToBottom();
                         } else if (data.type === 'streaming_complete') {
                             // Streaming is complete, now process the full response
                             fullReply = data.full_reply;
@@ -1381,11 +1549,13 @@ chatForm.onsubmit = async function(e) {
                                 loadExistingFeedback();
                             }, 500);
                             
+                            setTimeout(() => statusBar.classList.add('hidden'), 500);
                             scrollToBottom();
                             
                             } catch (processingError) {
                                 console.error('Error processing response:', processingError);
                                 hasError = true;
+                                setTimeout(() => statusBar.classList.add('hidden'), 500);
                                 streamingElem.innerHTML = `
                                     <div class="message-content">
                                         <div class="error-message">
@@ -1410,6 +1580,7 @@ chatForm.onsubmit = async function(e) {
                             
                         } else if (data.type === 'error') {
                             hasError = true;
+                            setTimeout(() => statusBar.classList.add('hidden'), 500);
                             streamingElem.innerHTML = `
                                 <div class="message-content">
                                     <div class="error-message">
@@ -1431,6 +1602,7 @@ chatForm.onsubmit = async function(e) {
         
     } catch (error) {
         console.error('Network/Connection Error:', error);
+        setTimeout(() => statusBar.classList.add('hidden'), 500);
         const streamingElem = document.getElementById(streamingId);
         if (streamingElem) {
             let errorMessage = 'Unknown error occurred';
