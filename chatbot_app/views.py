@@ -14,6 +14,8 @@ import uuid
 import re
 from pathlib import Path
 from .models import FAQ
+import codecs
+import ast
 
 def require_login(view_func):
     def wrapper(request, *args, **kwargs):
@@ -336,117 +338,93 @@ def dify_streaming_proxy(request):
     def stream_response():
         max_retries = 1  # Initial attempt + 1 retry
         for attempt in range(max_retries + 1):
-            try:
-                # Call Dify API with streaming mode
-                dify_response = post_to_dify(
-                    query=enhanced_message,
-                    user_id=user_id,
-                    conversation_id=conversation_id,
-                    files=files,
-                    response_mode="streaming"
-                )
-                
-                # Handle streaming response from Dify
-                full_reply = ""
-                conversation_id_extracted = None
-                
-                # Process the streaming response
-                print(f"DEBUG: [Attempt {attempt + 1}/{max_retries + 1}] Processing streaming response...")
-                for chunk in dify_response.iter_content(chunk_size=1024):
-                    if chunk:
-                        chunk_str = chunk.decode('utf-8')
-                        print(f"DEBUG: Chunk: {chunk_str[:100]}...")
-                        lines = chunk_str.split('\n')
-                        
-                        for line in lines:
-                            if line.startswith('data: '):
-                                try:
-                                    data = json.loads(line[6:])
-                                    print(f"DEBUG: Parsed: {data}")
-                                    if data.get('event') == 'agent_message':
-                                        if 'answer' in data:
-                                            answer_chunk = data['answer']
-                                            full_reply += answer_chunk
-                                            print(f"DEBUG: Added: {answer_chunk}")
-                                            # Stream this chunk to frontend
-                                            yield f"data: {json.dumps({'type': 'chunk', 'content': answer_chunk})}\n\n"
-                                    elif data.get('event') == 'message_end':
-                                        # Extract conversation_id if available
-                                        if 'conversation_id' in data and not conversation_id:
-                                            conversation_id_extracted = data['conversation_id']
-                                            print(f"DEBUG: Conversation ID: {conversation_id_extracted}")
-                                except json.JSONDecodeError as e:
-                                    print(f"DEBUG: JSON error: {e}")
-                                    continue
-                
-                print(f"DEBUG: Final reply from attempt {attempt + 1}: {full_reply}")
-                
-                # Sentinel Token Validation
-                validation_passed = False
-                error_message_for_log = ""
-                
+            conversation_id_extracted = None
+            stream_successfully_completed = False
+            # Use a temporary file to store the response instead of holding it in memory
+            # This makes the process resilient to OOM (Out of Memory) killer on the server
+            with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix=".json", encoding='utf-8') as temp_file:
+                print(f"DEBUG: [Attempt {attempt + 1}/{max_retries + 1}] Starting request... Temp file: {temp_file.name}")
                 try:
-                    stripped_reply = full_reply.strip()
-                    if not stripped_reply:
-                        error_message_for_log = "Response was empty after streaming."
-                        print("DEBUG: Validation failed because the final response string is empty.")
-                    elif not stripped_reply.startswith('{'):
-                        validation_passed = True
-                    else:
-                        if stripped_reply.endswith('}'):
-                            data = json.loads(stripped_reply)
-                            if data.get("status") == "complete":
-                                validation_passed = True
-                            else:
-                                error_message_for_log = "Data integrity check failed: Status is not 'complete'."
-                                print(f"DEBUG: Sentinel token check failed. 'status' key not found or value is not 'complete'.")
+                    # Call Dify API with streaming mode
+                    dify_response = post_to_dify(
+                        query=enhanced_message,
+                        user_id=user_id,
+                        conversation_id=conversation_id,
+                        files=files,
+                        response_mode="streaming"
+                    )
+                    
+                    # Process the streaming response
+                    for line in dify_response.iter_lines(decode_unicode=True):
+                        if line and line.startswith('data: '):
+                            try:
+                                data = json.loads(line[6:])
+                                if data.get('event') == 'agent_message':
+                                    if 'answer' in data:
+                                        answer_chunk = data['answer']
+                                        temp_file.write(answer_chunk)
+                                        yield f"data: {json.dumps({'type': 'chunk', 'content': answer_chunk})}\\n\\n"
+                                elif data.get('event') == 'agent_thought':
+                                    if 'thought' in data and data['thought'] and data['thought'].strip().startswith('{'):
+                                        print("DEBUG: Received 'agent_thought' with full JSON. Writing to file and breaking.")
+                                        temp_file.seek(0)
+                                        temp_file.truncate()
+                                        temp_file.write(data['thought'])
+                                        stream_successfully_completed = True
+                                        break
+                                elif data.get('event') == 'message_end':
+                                    if 'conversation_id' in data and not conversation_id:
+                                        conversation_id_extracted = data['conversation_id']
+                                    print("DEBUG: Received 'message_end' event. Stream finished.")
+                                    stream_successfully_completed = True
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                    
+                    # After the loop, read the full response from the temp file for validation
+                    temp_file.seek(0)
+                    full_reply = temp_file.read()
+                    print(f"DEBUG: [Attempt {attempt + 1}] Stream processing finished. Final reply length: {len(full_reply)}")
+                    
+                    # Sentinel Token Validation
+                    processed_reply = re.sub(r'(?<!\\)\\n', r'\\\\n', full_reply)
+                    try:
+                        data = json.loads(processed_reply)
+                        if data.get("status") == "complete":
+                            print(f"DEBUG: [Attempt {attempt + 1}] Validation successful.")
+                            if conversation_id_extracted and not conversation_id:
+                                session.conversation_id = conversation_id_extracted
+                                session.save()
+                            yield f"data: {json.dumps({'type': 'streaming_complete', 'full_reply': processed_reply})}\\n\\n"
+                            return # Success, exit the entire function
                         else:
-                            error_message_for_log = "Response appears to be a truncated JSON object."
-                            print("DEBUG: Validation failed because response starts with '{' but does not end with '}'.")
+                            raise ValueError("Status is not 'complete'")
+                    except (json.JSONDecodeError, ValueError) as e:
+                        print(f"DEBUG: [Attempt {attempt + 1}] Failed validation: {e}")
+                        if attempt < max_retries:
+                            print("DEBUG: Retrying...")
+                            time.sleep(1)
+                            # The loop will now naturally start the next attempt
+                        else:
+                            raise e # Final attempt failed, raise the exception to be caught below.
 
-                except json.JSONDecodeError as e:
-                    error_message_for_log = f"Response is not a valid JSON object. Error: {e}"
-                    print(f"DEBUG: JSON validation failed. Error: {e}")
-                    print(f"DEBUG: Truncated/corrupted JSON: {full_reply[:500]}...")
                 except Exception as e:
-                    error_message_for_log = f"An unexpected error occurred during response validation: {str(e)}"
-                    print(f"DEBUG: Unexpected validation error: {e}")
-
-                if validation_passed:
-                    if conversation_id_extracted and not conversation_id:
-                        session.conversation_id = conversation_id_extracted
-                        session.save()
-                    yield f"data: {json.dumps({'type': 'streaming_complete', 'full_reply': full_reply})}\n\n"
-                    return # Exit loop on success
-                else:
-                    # Validation failed, check if we can retry
+                    print(f"DEBUG: [Attempt {attempt + 1}] An exception occurred: {e}")
                     if attempt < max_retries:
-                        print(f"DEBUG: [Attempt {attempt + 1}] Failed validation. Retrying... Reason: {error_message_for_log}")
-                        time.sleep(1) # Wait 1 second before retrying
-                        continue # Go to the next iteration of the loop
+                        print("DEBUG: Retrying after exception...")
+                        time.sleep(1)
+                        # The loop will now naturally start the next attempt
                     else:
-                        # This was the last attempt, send error to user
+                        # All retries failed. Send a user-facing error.
                         user_facing_error = (
                             "The analysis was interrupted, possibly due to network instability, "
                             "resulting in an incomplete response from the AI agent. "
                             "Please try submitting your question again."
                         )
-                        yield f"data: {json.dumps({'type': 'error', 'error': user_facing_error})}\n\n"
-                        print(f"DEBUG: Yielding validation error to frontend after all retries. Internal reason: {error_message_for_log}")
+                        yield f"data: {json.dumps({'type': 'error', 'error': user_facing_error})}\\n\\n"
+                        print(f"DEBUG: Yielding final error to frontend after all retries failed. Final error: {e}")
                         return
-
-            except Exception as e:
-                # This catches broader errors like requests.exceptions.ConnectionError
-                print(f"DEBUG: [Attempt {attempt + 1}] An exception occurred: {e}")
-                if attempt < max_retries:
-                    print("DEBUG: Retrying after exception...")
-                    time.sleep(1)
-                    continue
-                else:
-                    error_msg = f"An unrecoverable error occurred after multiple retries: {str(e)}"
-                    yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
-                    return
-
+    
     return StreamingHttpResponse(
         stream_response(),
         content_type='text/event-stream'
@@ -844,9 +822,12 @@ def format_json_response(json_data, session_id, message_id):
     
     # 3. THIRD SECTION: Results Table (folded by default)
     if json_data.get('table_markdown') and json_data['table_markdown'].strip():
+        # Un-escape newlines that were escaped for JSON transport, so markdown can render them correctly.
+        table_markdown_content = json_data['table_markdown'].replace('\\n', '\n')
+        
         # Convert markdown table to HTML
         import markdown
-        table_html = markdown.markdown(json_data['table_markdown'], extensions=['tables'])
+        table_html = markdown.markdown(table_markdown_content, extensions=['tables'])
         
         # Generate unique ID for SQL query
         import hashlib
@@ -1065,6 +1046,26 @@ except Exception as e:
 print("Script execution completed successfully")
 """
         
+        # --- Pre-execution Syntax Check ---
+        try:
+            ast.parse(enhanced_script)
+        except SyntaxError as e:
+            # If the script has a syntax error, don't even try to run it.
+            # Return a clean error message to the user.
+            print(f"DEBUG: Python script syntax error before execution: {e}")
+            return {
+                'success': False,
+                'error': 'The AI-generated Python code is invalid and could not be executed.',
+                'stdout': '',
+                'stderr': f"Syntax Error: {e.msg}\nLine {e.lineno}: {e.text}",
+                'debug_info': {
+                    'error_type': 'SyntaxError',
+                    'line': e.lineno,
+                    'offset': e.offset,
+                    'text': e.text.strip()
+                }
+            }
+
         # Create a temporary Python file
         script_file = temp_dir / "script.py"
         with open(script_file, 'w', encoding='utf-8') as f:
@@ -1154,21 +1155,23 @@ def clean_python_script(script_content):
     
     # Remove any potential encoding issues
     script = script_content.strip()
-    
+
+    # First, safely convert literal "\\n" to actual newlines.
+    # This is much safer than the previous codecs.decode approach.
+    script = script.replace('\\n', '\n')
+
     # Fix common issues with agent-generated code:
     
-    # 1. Replace plt.show() with plt.savefig() and plt.close()
+    # 1. Replace plt.show()
     script = re.sub(r'plt\.show\(\)', '', script)
     
     # 2. Fix DataFrame creation from 'result' variable that doesn't exist
-    # Look for patterns like df = pd.DataFrame(result) and replace with sample data
     if 'pd.DataFrame(result)' in script:
         script = script.replace('pd.DataFrame(result)', 'pd.DataFrame()')
         # Add comment about missing data
         script = "# Note: 'result' variable not available, using sample data\n" + script
     
     # 3. Fix pandas pivot syntax errors
-    # Fix the exact error from the screenshot: positional argument after keyword arguments
     # Pattern: .pivot(index="col", columns="col", "values") -> .pivot(index="col", columns="col", values="values")
     script = re.sub(r'\.pivot\(\s*index\s*=\s*"([^"]+)"\s*,\s*columns\s*=\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)', 
                    r'.pivot(index="\1", columns="\2", values="\3")', script)
@@ -1182,7 +1185,6 @@ def clean_python_script(script_content):
     script = re.sub(r'\.pivot\(([^)]+),\s*"([^"]+)"\)', r'.pivot(\1, values="\2")', script)
     
     # 4. Fix seaborn barplot syntax issues
-    # Fix: sns.barplot(data=df, x='col', y=value) -> sns.barplot(data=df, x='col', y='col')
     script = re.sub(r"sns\.barplot\(([^)]+),\s*y=(\d+)", r"sns.barplot(\1, y=str(\2))", script)
     
     # 5. Replace references to SQL result data with sample data creation
@@ -1209,7 +1211,7 @@ df_avg_order_frequency = pd.DataFrame(data)
 """
         script = sample_data_creation + script
     
-    # 6. Ensure proper indentation (convert to spaces)
+    # 7. Ensure proper indentation (convert to spaces)
     lines = script.split('\n')
     cleaned_lines = []
     for line in lines:
@@ -1219,7 +1221,7 @@ df_avg_order_frequency = pd.DataFrame(data)
     
     script = '\n'.join(cleaned_lines)
     
-    # 7. Add proper indentation for the script content
+    # 8. Add proper indentation for the script content
     lines = script.split('\n')
     indented_lines = []
     for line in lines:
