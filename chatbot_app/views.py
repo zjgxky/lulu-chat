@@ -349,20 +349,45 @@ def dify_streaming_proxy(request):
                 # Handle streaming response from Dify
                 full_reply = ""
                 conversation_id_extracted = None
+                buffer = ""
+                json_error_count = 0
+                MAX_JSON_ERRORS = 5  # Max consecutive errors before retrying
                 
                 # Process the streaming response
                 print(f"DEBUG: [Attempt {attempt + 1}/{max_retries + 1}] Processing streaming response...")
                 for chunk in dify_response.iter_content(chunk_size=1024):
                     if chunk:
-                        chunk_str = chunk.decode('utf-8')
-                        print(f"DEBUG: Chunk: {chunk_str[:100]}...")
-                        lines = chunk_str.split('\n')
-                        
-                        for line in lines:
+                        decoded_chunk = chunk.decode('utf-8')
+                        buffer += decoded_chunk
+
+                        # Process complete lines in the buffer
+                        while '\n' in buffer:
+                            line, buffer = buffer.split('\n', 1)
                             if line.startswith('data: '):
+                                json_str = line[6:]
+                                if not json_str.strip():
+                                    continue
+                                    
                                 try:
-                                    data = json.loads(line[6:])
+                                    data = json.loads(json_str)
+                                    json_error_count = 0  # Reset counter on success
                                     print(f"DEBUG: Parsed: {data}")
+
+                                    # For complex queries, the full response might be in a 'thought' event
+                                    if data.get('event') == 'agent_thought' and 'thought' in data:
+                                        thought_content = data['thought']
+                                        if isinstance(thought_content, str) and thought_content.strip().startswith('{'):
+                                            try:
+                                                # Check if it's a valid JSON object
+                                                json.loads(thought_content)
+                                                full_reply = thought_content
+                                                print(f"DEBUG: Found complete JSON response in 'thought'. Using it as full reply.")
+                                                # End the loop as we have the full response
+                                                break
+                                            except json.JSONDecodeError:
+                                                # Not a valid JSON, so ignore
+                                                pass
+
                                     if data.get('event') == 'agent_message':
                                         if 'answer' in data:
                                             answer_chunk = data['answer']
@@ -376,7 +401,11 @@ def dify_streaming_proxy(request):
                                             conversation_id_extracted = data['conversation_id']
                                             print(f"DEBUG: Conversation ID: {conversation_id_extracted}")
                                 except json.JSONDecodeError as e:
-                                    print(f"DEBUG: JSON error: {e}")
+                                    json_error_count += 1
+                                    print(f"DEBUG: JSON error #{json_error_count}: {e}")
+                                    print(f"DEBUG: Problematic line: {line}")
+                                    if json_error_count >= MAX_JSON_ERRORS:
+                                        raise ValueError("Stream corrupted: Too many consecutive JSON errors.")
                                     continue
                 
                 print(f"DEBUG: Final reply from attempt {attempt + 1}: {full_reply}")
@@ -846,7 +875,10 @@ def format_json_response(json_data, session_id, message_id):
     if json_data.get('table_markdown') and json_data['table_markdown'].strip():
         # Convert markdown table to HTML
         import markdown
-        table_html = markdown.markdown(json_data['table_markdown'], extensions=['tables'])
+        
+        # Clean the markdown before converting
+        cleaned_markdown = clean_table_markdown(json_data['table_markdown'])
+        table_html = markdown.markdown(cleaned_markdown, extensions=['tables'])
         
         # Generate unique ID for SQL query
         import hashlib
@@ -991,6 +1023,33 @@ def format_json_response(json_data, session_id, message_id):
     """
     
     return final_html
+
+def clean_table_markdown(md_text):
+    """Clean up markdown table to ensure correct column count in each row"""
+    if not md_text or not isinstance(md_text, str):
+        return ""
+        
+    lines = md_text.strip().split('\n')
+    if len(lines) < 2:
+        return md_text
+
+    header = lines[0]
+    num_columns = len([h for h in header.split('|') if h.strip()])
+
+    cleaned_lines = [header, lines[1]]
+    for line in lines[2:]:
+        parts = [p.strip() for p in line.split('|') if p.strip()]
+        if len(parts) > num_columns:
+            # Join the extra parts into the last expected column
+            last_column_content = " ".join(parts[num_columns-1:])
+            corrected_parts = parts[:num_columns-1] + [last_column_content]
+            cleaned_line = "| " + " | ".join(corrected_parts) + " |"
+            cleaned_lines.append(cleaned_line)
+        else:
+            cleaned_lines.append(line)
+            
+    return '\n'.join(cleaned_lines)
+
 
 def execute_python_script(script_content, session_id):
     """Execute Python script and return plot file path if generated"""

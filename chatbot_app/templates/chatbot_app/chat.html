@@ -52,7 +52,7 @@
         margin-right: auto;
         border-bottom-left-radius: 4px;
         border: 1px solid #C8C2B8;
-        width: 70%;
+        max-width: 70%;
     }
     
     .user {
@@ -1426,7 +1426,9 @@ chatForm.onsubmit = async function(e) {
                             // Handle LaTeX math formulas wrapped in $$
                             processedReply = processedReply.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
                                 try {
-                                    return katex.renderToString(content, { displayMode: true });
+                                    // Pre-process the content to remove problematic newlines for KaTeX display mode
+                                    const processedContent = content.replace(/\\\\|\\newline/g, ' ');
+                                    return katex.renderToString(processedContent, { displayMode: true, throwOnError: false });
                                 } catch (error) {
                                     console.log('KaTeX error:', error);
                                     return `<pre><code class="language-latex">${content}</code></pre>`;
@@ -1735,7 +1737,9 @@ function processExistingMessages() {
             // Handle LaTeX math formulas wrapped in $$
             messageText = messageText.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
                 try {
-                    return katex.renderToString(content, { displayMode: true });
+                    // Pre-process the content to remove problematic newlines for KaTeX display mode
+                    const processedContent = content.replace(/\\\\|\\newline/g, ' ');
+                    return katex.renderToString(processedContent, { displayMode: true, throwOnError: false });
                 } catch (error) {
                     console.log('KaTeX error:', error);
                     return `<pre><code class="language-latex">${content}</code></pre>`;
@@ -2188,7 +2192,8 @@ async function addToFAQ(sessionId, messageId, event) {
 // Check FAQ status for a session
 async function checkFAQStatus(sessionId) {
     try {
-        const response = await fetch(`{% url 'check_faq_status' 0 %}`.replace('0', sessionId));
+        const url = "{% url 'check_faq_status' 0 %}".replace('0', sessionId);
+        const response = await fetch(url);
         const data = await response.json();
         
         if (data.success) {
