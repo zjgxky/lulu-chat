@@ -14,15 +14,15 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                     <a href="{% url 'chat_session' session.session_id %}" style="text-decoration: none; color: inherit;">
-                        {% if session.preview %}
-                            <h4 style="color: #140F0F; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600; line-height: 1.4;">
+                        <h4 style="color: #140F0F; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600; line-height: 1.4;">
+                            {% if session.title %}
+                                {{ session.title|truncatechars:150 }}
+                            {% elif session.preview %}
                                 {{ session.preview|truncatechars:150 }}
-                            </h4>
-                        {% else %}
-                            <h4 style="color: #140F0F; margin-bottom: 8px; font-size: 1.1rem; font-weight: 600;">
-                                Session without question preview
-                            </h4>
-                        {% endif %}
+                            {% else %}
+                                FAQ Session #{{ session.session_id }}
+                            {% endif %}
+                        </h4>
                         <div style="font-size: 0.85rem; color: #7F746C;">
                             Session created: {{ session.created_at|date:"M j, Y g:i A" }}<br>
                             Added to FAQ: {{ session.faq_created_at|date:"M j, Y g:i A" }}

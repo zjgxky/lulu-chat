@@ -191,6 +191,18 @@ input:checked + .toggle-slider:before {
                 <span class="toggle-slider"></span>
             </label>
         </div>
+
+        <div class="settings-item">
+            <div class="settings-info">
+                <div class="settings-title">Custom Logo</div>
+                <div class="settings-description">Upload your own logo to replace the default one. The page will reload.</div>
+            </div>
+            <form id="logo-upload-form" action="{% url 'upload_logo' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="logo" id="logo-upload-input" accept="image/png, image/jpeg, image/svg+xml" style="display: none;">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('logo-upload-input').click();">Upload Logo</button>
+            </form>
+        </div>
         
         <div class="settings-item">
             <div class="settings-info">
@@ -427,6 +439,13 @@ const Settings = {
 // Initialize settings on page load
 document.addEventListener('DOMContentLoaded', function() {
     Settings.load();
+
+    document.getElementById('logo-upload-input').addEventListener('change', function() {
+        const form = document.getElementById('logo-upload-form');
+        if (this.files.length > 0) {
+            form.submit();
+        }
+    });
     
     // Add event listeners for real-time updates
     document.getElementById('lulu-branding-toggle').addEventListener('change', function() {
@@ -491,7 +510,9 @@ function updateSidebarHeader(isEnabled) {
             `;
         } else {
             sidebarHeader.innerHTML = `
-                <div class="sidebar-title" style="font-size: 1.4rem; font-weight: 600; color: #140F0F; margin: 0;">Chatbot</div>
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <div class="sidebar-title" style="font-size: 1.4rem; line-height: 40px;">AI for Insights</div>
+                </div>
             `;
         }
     }

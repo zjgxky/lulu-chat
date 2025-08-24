@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import chatbot_view, session_list_view, new_session_view, dify_proxy, dify_streaming_proxy, process_streamed_response, delete_session_view, login_view, logout_view, dashboard_view, feedback_view, get_feedback_state, execute_python_script_view, add_to_faq_view, check_faq_status, settings_view, test_formatting_view, debug_connection_view, debug_python_view, debug_katex_view, rename_session_view, add_session_to_faq_view, rename_faq_session_view, delete_faq_session_view, remove_faq_session_view
+from .views import chatbot_view, session_list_view, new_session_view, dify_proxy, dify_streaming_proxy, process_streamed_response, delete_session_view, login_view, logout_view, dashboard_view, feedback_view, get_feedback_state, execute_python_script_view, add_to_faq_view, check_faq_status, settings_view, test_formatting_view, debug_connection_view, debug_python_view, debug_katex_view, rename_session_view, add_session_to_faq_view, rename_faq_session_view, delete_faq_session_view, remove_faq_session_view, upload_logo_view
 
 urlpatterns = [
     path("login/", login_view, name="login"),
@@ -7,6 +7,7 @@ urlpatterns = [
     path("", dashboard_view, name="dashboard"),
     path("dashboard/", dashboard_view, name="dashboard"),
     path("settings/", settings_view, name="settings"),
+    path("upload-logo/", upload_logo_view, name="upload_logo"),
     path("sessions/", session_list_view, name="session_list"),
     path("sessions/new/", new_session_view, name="new_session"),
     path("sessions/<int:session_id>/", chatbot_view, name="chat_session"),

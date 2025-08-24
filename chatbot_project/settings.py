@@ -69,6 +69,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "chatbot_app.context_processors.faq_sessions",
+                "chatbot_app.context_processors.logo_processor",
             ],
         },
     },

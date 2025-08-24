@@ -14,6 +14,8 @@ import uuid
 import re
 from pathlib import Path
 from .models import FAQ
+from django.core.files.storage import FileSystemStorage
+from django.templatetags.static import static
 
 def require_login(view_func):
     def wrapper(request, *args, **kwargs):
@@ -1440,12 +1442,38 @@ def add_to_faq_view(request):
     return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
 
 @require_login
+def upload_logo_view(request):
+    if request.method == 'POST' and request.FILES.get('logo'):
+        logo = request.FILES['logo']
+        fs = FileSystemStorage(location=os.path.join(settings.BASE_DIR, 'static'))
+        
+        # Delete old custom logo if it exists
+        custom_logo_path = os.path.join(settings.BASE_DIR, 'static', 'custom_logo.png')
+        if os.path.exists(custom_logo_path):
+            os.remove(custom_logo_path)
+            
+        # Save new logo
+        filename = fs.save('custom_logo.png', logo)
+        
+        # Update session or application setting to indicate custom logo is used
+        request.session['custom_logo_url'] = fs.url(filename)
+        
+        return redirect('settings')
+    return redirect('settings')
+
+@require_login
 def settings_view(request):
     """Settings page view"""
-    from django.templatetags.static import static
+    logo_url = static('Lululemon-Emblem-700x394.png')
+    
+    # Check if a custom logo exists
+    custom_logo_path = os.path.join(settings.BASE_DIR, 'static', 'custom_logo.png')
+    if os.path.exists(custom_logo_path):
+        logo_url = static('custom_logo.png')
+        
     return render(request, "chatbot_app/settings.html", {
         "sessions": ChatSession.objects.order_by('-created_at'),
-        "logo_url": static('Lululemon-Emblem-700x394.png'),
+        "logo_url": logo_url,
     })
 
 @require_login
