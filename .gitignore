@@ -44,4 +44,3 @@ dist/
 build/
 *.egg-info/
 db.sqlite3
-db.sqlite3
