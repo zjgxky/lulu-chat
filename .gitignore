@@ -44,3 +44,6 @@ dist/
 build/
 *.egg-info/
 db.sqlite3
+# Generated plots (never commit)
+static/plots/
+staticfiles/plots/
